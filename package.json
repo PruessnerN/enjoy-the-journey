@@ -1,0 +1,24 @@
+{
+  "name": "enjoy-the-journey",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enjoy the Journey - a road trip planner that turns long drives into days full of great stops.",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @journey/shared && npm run build -w @journey/api && npm run build -w @journey/web",
+    "dev": "npm run build -w @journey/shared && concurrently -n shared,api,web -c gray,blue,magenta \"npm run dev -w @journey/shared\" \"npm run dev -w @journey/api\" \"npm run dev -w @journey/web\"",
+    "test": "npm run build -w @journey/shared && npm test -w @journey/api && npm test -w @journey/web",
+    "typecheck": "npm run build -w @journey/shared && npm run typecheck -w @journey/api && npm run typecheck -w @journey/web"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,56 @@
+name: enjoy-the-journey
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: enjoy-the-journey-db
+    environment:
+      POSTGRES_DB: journey
+      POSTGRES_USER: journey
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-journey-local-only}
+    volumes:
+      - journey-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U journey -d journey']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      target: api
+    container_name: enjoy-the-journey-api
+    init: true
+    environment:
+      DATABASE_URL: postgres://journey:${POSTGRES_PASSWORD:-journey-local-only}@db:5432/journey
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_MAPS_BROWSER_KEY: ${GOOGLE_MAPS_BROWSER_KEY:-}
+      GOOGLE_MAPS_MAP_ID: ${GOOGLE_MAPS_MAP_ID:-}
+      DATA_SOURCE: ${DATA_SOURCE:-auto}
+      CACHE_TTL_MINUTES: ${CACHE_TTL_MINUTES:-360}
+      PLANS_PER_HOUR_PER_IP: ${PLANS_PER_HOUR_PER_IP:-60}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    expose:
+      - '4000'
+    depends_on:
+      db:
+        condition: service_healthy
+    stop_grace_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      target: web
+    container_name: enjoy-the-journey-web
+    ports:
+      - '${WEB_PORT:-3004}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  journey-db:

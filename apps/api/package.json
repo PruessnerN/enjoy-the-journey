@@ -1,0 +1,32 @@
+{
+  "name": "@journey/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^11.2.1",
+    "@journey/shared": "*",
+    "@photostructure/tz-lookup": "^11.7.0",
+    "fastify": "^5.12.7",
+    "luxon": "^3.7.2",
+    "pg": "^8.23.1",
+    "suncalc": "^2.1.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.6",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.23.1",
+    "@types/suncalc": "^1.9.2",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
+}
