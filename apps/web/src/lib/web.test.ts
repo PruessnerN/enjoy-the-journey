@@ -80,10 +80,11 @@ describe('theme', () => {
 });
 
 describe('stop icons', () => {
-  it('uses only driving, lodging and activity icons', () => {
+  it('uses only driving, lodging, activity and meal icons', () => {
     const kinds = (['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIconKind({ kind }));
-    expect(kinds).toEqual(['activity', 'activity', 'activity', 'lodging', 'driving']);
-    expect(new Set((['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIcon({ kind }))).size).toBe(3);
+    expect(kinds).toEqual(['activity', 'meal', 'activity', 'lodging', 'driving']);
+    expect(stopIcon({ kind: 'meal' })).toBe('🍽️');
+    expect(new Set((['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIcon({ kind }))).size).toBe(4);
     expect([dayStartIconKind(0), dayStartIconKind(2)]).toEqual(['driving', 'lodging']);
   });
 });

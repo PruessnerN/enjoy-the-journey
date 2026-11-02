@@ -64,7 +64,7 @@ export function TripHeader({ trip, onOpenSettings }: { trip: Trip; onOpenSetting
             🚗 {formatDuration(s.totalDriveSeconds)} driving <span className="muted">({formatDuration(s.directDriveSeconds)} direct)</span>
           </li>
           <li>{STOP_ICONS.activity.emoji} {s.activityCount} activities</li>
-          <li>🍽️ {s.mealCount} meals</li>
+          <li>{STOP_ICONS.meal.emoji} {s.mealCount} meals</li>
           {trip.dataSource === 'demo' && <li className="pill--demo">Demo data</li>}
         </ul>
       </div>

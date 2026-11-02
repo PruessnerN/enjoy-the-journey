@@ -1692,6 +1692,10 @@ textarea.input {
   border-color: var(--accent);
 }
 
+.stop__marker--meal {
+  border-color: var(--accent-strong);
+}
+
 .stop__start {
   padding-top: 0.6rem;
 }
