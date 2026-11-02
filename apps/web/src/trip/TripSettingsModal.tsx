@@ -26,67 +26,80 @@ export function TripSettingsModal({ trip, onClose }: { trip: Trip; onClose: () =
   const request = useMemo(() => toRequest({ ...draft, name: '' }), [draft]);
   const hasEdits = trip.days.some((d) => d.stops.some((s) => s.source === 'user' || s.locked));
 
+  // A <dialog> sits in the browser's top layer, above any page overlay, so step aside while planning.
+  // The draft lives in this component, so if re-planning fails the dialog returns with the error and the user's changes.
+  if (replan.isPending) return <PlanningOverlay title="Re-planning your journey" />;
+
   return (
-    <>
-      {replan.isPending && <PlanningOverlay title="Re-planning your journey" />}
-      <Modal
-        title="Trip settings"
-        onClose={onClose}
-        wide
-        footer={
-          <>
-            {!request.ok && <span className="field__error">{request.message}</span>}
-            <button type="button" className="button button--ghost" onClick={onClose}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="button button--primary"
-              disabled={!request.ok || replan.isPending}
-              onClick={() => request.ok && replan.mutate(request.request, { onSuccess: onClose })}
-            >
-              Re-plan trip
-            </button>
-          </>
-        }
-      >
-        {hasEdits && (
-          <p className="issue issue--warning">⚠️ Re-planning builds a fresh itinerary and replaces your manual edits and locked stops.</p>
-        )}
-        <div className="tabs" role="tablist">
-          {TABS.map((t) => (
-            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={`tab${tab === t.id ? ' is-active' : ''}`} onClick={() => setTab(t.id)}>
-              {t.label}
-            </button>
-          ))}
+    <Modal
+      title="Trip settings"
+      onClose={onClose}
+      wide
+      footer={
+        <>
+          {!request.ok && <span className="field__error">{request.message}</span>}
+          <button type="button" className="button button--ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="button button--primary"
+            disabled={!request.ok || replan.isPending}
+            onClick={() => request.ok && replan.mutate(request.request, { onSuccess: onClose })}
+          >
+            Re-plan trip
+          </button>
+        </>
+      }
+    >
+      {hasEdits && (
+        <p className="issue issue--warning">⚠️ Re-planning builds a fresh itinerary and replaces your manual edits and locked stops.</p>
+      )}
+      <div className="tabs" role="tablist">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`tab${tab === t.id ? ' is-active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'route' && (
+        <div className="form-stack">
+          <PlaceAutocomplete label="Starting point" value={draft.origin} onChange={(origin) => update({ origin })} />
+          <PlaceAutocomplete
+            label="Destination"
+            value={draft.destination}
+            onChange={(destination) => update({ destination })}
+            bias={draft.origin?.location}
+          />
         </div>
-        {tab === 'route' && (
-          <div className="form-stack">
-            <PlaceAutocomplete label="Starting point" value={draft.origin} onChange={(origin) => update({ origin })} />
-            <PlaceAutocomplete label="Destination" value={draft.destination} onChange={(destination) => update({ destination })} bias={draft.origin?.location} />
-          </div>
-        )}
-        {tab === 'activities' && (
-          <StepActivities
-            activities={draft.activities}
-            onChange={(activities) => update({ activities })}
-            meals={draft.preferences.meals}
-            onMealsChange={(meals) => update({ preferences: { ...draft.preferences, meals } })}
-            maxActivitiesPerDay={draft.preferences.maxActivitiesPerDay}
-            onMaxActivitiesPerDayChange={(maxActivitiesPerDay) => update({ preferences: { ...draft.preferences, maxActivitiesPerDay } })}
-          />
-        )}
-        {tab === 'lodging' && <StepLodging value={draft.lodgingType} onChange={(lodgingType) => update({ lodgingType })} />}
-        {tab === 'schedule' && (
-          <StepSchedule
-            departureDate={draft.departureDate}
-            onDateChange={(departureDate) => update({ departureDate })}
-            preferences={draft.preferences}
-            onChange={(preferences) => update({ preferences })}
-          />
-        )}
-        {replan.isError && <ErrorNote error={replan.error} />}
-      </Modal>
-    </>
+      )}
+      {tab === 'activities' && (
+        <StepActivities
+          activities={draft.activities}
+          onChange={(activities) => update({ activities })}
+          meals={draft.preferences.meals}
+          onMealsChange={(meals) => update({ preferences: { ...draft.preferences, meals } })}
+          maxActivitiesPerDay={draft.preferences.maxActivitiesPerDay}
+          onMaxActivitiesPerDayChange={(maxActivitiesPerDay) => update({ preferences: { ...draft.preferences, maxActivitiesPerDay } })}
+        />
+      )}
+      {tab === 'lodging' && <StepLodging value={draft.lodgingType} onChange={(lodgingType) => update({ lodgingType })} />}
+      {tab === 'schedule' && (
+        <StepSchedule
+          departureDate={draft.departureDate}
+          onDateChange={(departureDate) => update({ departureDate })}
+          preferences={draft.preferences}
+          onChange={(preferences) => update({ preferences })}
+        />
+      )}
+      {replan.isError && <ErrorNote error={replan.error} />}
+    </Modal>
   );
 }

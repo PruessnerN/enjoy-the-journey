@@ -27,8 +27,12 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
   const end = day.stops[day.stops.length - 1]!;
   const zoneNote = clocksDiffer(day.arrival, end.timeZone, day.timeZone) ? ` ${zoneAbbreviation(day.arrival, end.timeZone)}` : '';
 
-  const commit = (stops: StopInput[], startTime?: string) =>
-    update.mutate({ index: day.index, update: { stops, ...(startTime ? { startTime } : {}) } }, { onSuccess: () => setModal(null) });
+  const commit = (stops: StopInput[], startTime?: string) => {
+    // Close any dialog right away: it would otherwise cover the timeline's progress indicator
+    // (dialogs render above the page). Errors show in the day header.
+    setModal(null);
+    update.mutate({ index: day.index, update: { stops, ...(startTime ? { startTime } : {}) } });
+  };
   const edit = (e: DayEdit) => commit(applyDayEdit(day, e));
 
   return (
