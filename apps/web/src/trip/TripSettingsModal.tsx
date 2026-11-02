@@ -72,6 +72,8 @@ export function TripSettingsModal({ trip, onClose }: { trip: Trip; onClose: () =
             onChange={(activities) => update({ activities })}
             meals={draft.preferences.meals}
             onMealsChange={(meals) => update({ preferences: { ...draft.preferences, meals } })}
+            maxActivitiesPerDay={draft.preferences.maxActivitiesPerDay}
+            onMaxActivitiesPerDayChange={(maxActivitiesPerDay) => update({ preferences: { ...draft.preferences, maxActivitiesPerDay } })}
           />
         )}
         {tab === 'lodging' && <StepLodging value={draft.lodgingType} onChange={(lodgingType) => update({ lodgingType })} />}

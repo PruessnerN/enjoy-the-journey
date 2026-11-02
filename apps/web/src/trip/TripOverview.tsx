@@ -2,7 +2,7 @@ import { formatDistance, formatDuration, type Trip } from '@journey/shared';
 import { formatDate, formatTime } from '../lib/time';
 import { useTheme } from '../components/ThemeProvider';
 import { dayColor } from '../map/colors';
-import { stopEmoji } from './StopCard';
+import { stopIcon } from './stopIcons';
 
 export function TripOverview({ trip, onSelectDay }: { trip: Trip; onSelectDay: (index: number) => void }) {
   const { theme } = useTheme();
@@ -31,7 +31,7 @@ export function TripOverview({ trip, onSelectDay }: { trip: Trip; onSelectDay: (
               <div className="overview__stops" aria-label="Stops">
                 {day.stops.map((s) => (
                   <span key={s.id} title={s.place.name}>
-                    {stopEmoji(s, trip)}
+                    {stopIcon(s)}
                   </span>
                 ))}
               </div>

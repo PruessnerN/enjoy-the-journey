@@ -101,6 +101,38 @@ describe('planTrip (demo data)', () => {
     }
   });
 
+  it('fits "2–3 times this trip" activities in a few times, spread out', async () => {
+    const provider = demoProvider();
+    const request = await makeRequest(provider, 'Seattle', 'Denver', {
+      activities: activities('fishing', 'kayaking', 'scenic_viewpoint'),
+      preferences: { pace: 'relaxed', maxDrivingHoursPerDay: 4 },
+    });
+    expect(request.activities.find((a) => a.id === 'fishing')!.frequency).toBe('few');
+    const plan = await planTrip(request, provider);
+    expect(plan.days.length).toBeGreaterThanOrEqual(5);
+    assertTripInvariants(plan, request);
+    for (const id of ['fishing', 'kayaking']) {
+      const days = plan.days.filter((d) => d.stops.some((s) => s.activityId === id)).map((d) => d.index);
+      expect(days.length).toBeGreaterThanOrEqual(2);
+      expect(days.length).toBeLessThanOrEqual(3);
+      expect(days.length).toBeLessThan(plan.days.length);
+    }
+  });
+
+  it('never schedules more activities per day than the limit', async () => {
+    const provider = demoProvider();
+    const request = await makeRequest(provider, 'Boise', 'Salt Lake City', {
+      activities: activities('scenic_viewpoint', 'coffee', 'historic_sites', 'museums'),
+      preferences: { maxActivitiesPerDay: 2 },
+    });
+    const plan = await planTrip(request, provider);
+    assertTripInvariants(plan, request);
+    for (const day of plan.days) {
+      expect(day.stops.filter((s) => s.kind === 'activity' || s.kind === 'custom').length).toBeLessThanOrEqual(2);
+    }
+    expect(plan.summary.activityCount).toBeGreaterThan(0);
+  });
+
   it('respects a fixed number of days', async () => {
     const provider = demoProvider();
     const request = await makeRequest(provider, 'Boise', 'Salt Lake City', { preferences: { fixedDays: 3 } });

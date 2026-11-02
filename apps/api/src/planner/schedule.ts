@@ -20,6 +20,8 @@ export interface DayContext {
   isFinalDay: boolean;
   /** Finish this many minutes before hard limits (used while planning). */
   safetyMinutes?: number;
+  /** Longest acceptable wait for a place to open; defaults to `TUNING.schedule.maxWaitForOpeningMinutes`. */
+  maxOpeningWaitMinutes?: number;
 }
 
 export interface ScheduledItem {
@@ -45,7 +47,7 @@ export interface DaySchedule {
 }
 
 /** Issues that the planner must not introduce. Users can still create them by editing. */
-const BLOCKING: ReadonlySet<IssueCode> = new Set([
+export const BLOCKING: ReadonlySet<IssueCode> = new Set([
   'closed',
   'after_dark',
   'meal_outside_window',
@@ -128,7 +130,7 @@ export function scheduleDay(items: SeqItem[], legs: LegEstimate[], ctx: DayConte
 
     if (!isEnd && item.place.openingHours?.length) {
       const status = checkOpen(item.place.openingHours, start, duration, tz, {
-        maxWaitMinutes: S.maxWaitForOpeningMinutes,
+        maxWaitMinutes: ctx.maxOpeningWaitMinutes ?? S.maxWaitForOpeningMinutes,
         toleranceMinutes: S.closingToleranceMinutes,
       });
       if (status.status === 'opens_later') {

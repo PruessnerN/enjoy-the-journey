@@ -50,11 +50,15 @@ export function emptyDraft(): TripDraft {
 }
 
 export function draftFromRequest(request: TripRequest, name = ''): TripDraft {
+  // Older trips marked some activities "must do"; those become the top of the ranking.
+  const ranked = [...request.activities]
+    .sort((a, b) => Number(b.priority === 'high') - Number(a.priority === 'high'))
+    .map((a) => ({ ...a, priority: 'normal' as const }));
   return {
     name,
     origin: request.origin,
     destination: request.destination,
-    activities: request.activities,
+    activities: ranked,
     lodgingType: request.lodgingType,
     departureDate: request.departureDate,
     preferences: request.preferences,

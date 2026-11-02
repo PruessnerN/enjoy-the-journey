@@ -5,7 +5,7 @@ import { placeMeals } from './meals.js';
 import { scheduleDay, type DayContext, type DaySchedule } from './schedule.js';
 import { estimateLegs, type SeqItem } from './sequence.js';
 import { TUNING } from './tuning.js';
-import type { TripUsage } from './usage.js';
+import type { TripPosition, TripUsage } from './usage.js';
 
 export interface DayPlanInput {
   profile: RouteProfile;
@@ -23,6 +23,9 @@ export interface DayPlanInput {
   excludeKeys: ReadonlySet<string>;
   minRating: number;
   maxDetourMinutes: number;
+  position: TripPosition;
+  /** Cap on activity stops (including the user's own) per day; null = no limit. */
+  maxActivitiesPerDay: number | null;
 }
 
 export interface DayPlanResult {
@@ -45,7 +48,11 @@ interface Evaluation {
  */
 export function planDay(input: DayPlanInput): DayPlanResult {
   const { end, profile, usage } = input;
-  const ctx = { ...input.ctx, safetyMinutes: TUNING.schedule.planningSafetyMinutes };
+  const ctx = {
+    ...input.ctx,
+    safetyMinutes: TUNING.schedule.planningSafetyMinutes,
+    maxOpeningWaitMinutes: TUNING.schedule.planningMaxOpeningWaitMinutes,
+  };
   const lockedMeals = new Set(input.locked.filter((i) => i.kind === 'meal' && i.mealType).map((i) => i.mealType!));
   let mealsToPlace = input.meals.filter((m) => !lockedMeals.has(m));
   let allowSkippingDinner = true;
@@ -80,13 +87,21 @@ export function planDay(input: DayPlanInput): DayPlanResult {
   mealsToPlace = mealsToPlace.filter((m) => !skippedMeals.includes(m));
   allowSkippingDinner = false;
   const dayCounts = new Map<string, number>();
+  // Activities arrive ranked by the user, most important first, so higher-ranked activities get
+  // first claim on the day's time. (Older trips may carry a "must do" flag; those still go first.)
   const ordered = [...input.activities].sort((a, b) => Number(b.priority === 'high') - Number(a.priority === 'high'));
+  const limit = input.maxActivitiesPerDay ?? Number.POSITIVE_INFINITY;
 
-  for (let pass = 0; pass < TUNING.maxFillPasses && !current.schedule.endBlocked; pass++) {
+  fill: for (let pass = 0; pass < TUNING.maxFillPasses && !current.schedule.endBlocked; pass++) {
     let added = false;
     for (const activity of ordered) {
-      if (!usage.canUse(activity, dayCounts)) continue;
+      if (activityStopCount(current.items) >= limit) break fill;
+      if (!usage.canUse(activity, dayCounts, input.position)) continue;
       const inDay = new Set(current.items.map((i) => placeKey(i.place)));
+      // Meals are re-placed on every trial, so only fixed stops anchor the spacing.
+      const anchors = current.items.filter((i) => i.kind !== 'meal').map((i) => i.seconds);
+      // Within an activity, the best-rated spot wins, nudged by detour length and by spacing along the drive.
+      const candidateRank = (c: Candidate) => activityScore(c, activity) + spreadBonus(c.seconds, anchors);
       const pool = (input.activityCandidates.get(activity.id) ?? [])
         .filter(
           (c) =>
@@ -96,7 +111,7 @@ export function planDay(input: DayPlanInput): DayPlanResult {
             c.detourSeconds <= input.maxDetourMinutes * 60 &&
             meetsRating(c.place, input.minRating, true),
         )
-        .sort((a, b) => activityScore(b, activity) - activityScore(a, activity))
+        .sort((a, b) => candidateRank(b) - candidateRank(a))
         .slice(0, TUNING.scoring.candidatesToTry);
 
       const durations = [...new Set([activity.durationMinutes, activity.minDurationMinutes])];
@@ -132,6 +147,21 @@ export function planDay(input: DayPlanInput): DayPlanResult {
     });
   }
   return { items: current.items, issues };
+}
+
+export function activityStopCount(items: readonly SeqItem[]): number {
+  return items.filter((i) => i.kind === 'activity' || i.kind === 'custom').length;
+}
+
+/**
+ * Rewards candidates that break up long stretches of driving: the further a candidate is (in
+ * drive time) from the day's start and from the nearest fixed stop, the higher the bonus.
+ */
+export function spreadBonus(seconds: number, anchors: readonly number[]): number {
+  let nearest = seconds; // distance back to the day's start
+  for (const a of anchors) nearest = Math.min(nearest, Math.abs(seconds - a));
+  const { spreadBonusPerHour, spreadMaxHours } = TUNING.scoring;
+  return Math.min(nearest / 3600, spreadMaxHours) * spreadBonusPerHour;
 }
 
 /** Accept a change only if it introduces no new blocking problems. */

@@ -14,14 +14,28 @@ import {
 import { formatClock } from '../lib/time';
 
 interface StepActivitiesProps {
+  /** Ranked: most important first. */
   activities: ActivityRequest[];
   onChange: (activities: ActivityRequest[]) => void;
   meals: TripPreferences['meals'];
   onMealsChange: (meals: TripPreferences['meals']) => void;
+  maxActivitiesPerDay: number | null | undefined;
+  onMaxActivitiesPerDayChange: (max: number | null) => void;
+}
+
+const DAILY_LIMITS = [1, 2, 3, 4, 5, 6];
+
+/** Moves the item at `from` to position `to`. */
+function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  if (item !== undefined) next.splice(Math.max(0, Math.min(to, next.length)), 0, item);
+  return next;
 }
 
 const FREQUENCY_LABELS: Record<ActivityFrequency, string> = {
   once: 'Once this trip',
+  few: '2–3 times this trip',
   daily: 'Once a day',
   often: 'Up to twice a day',
 };
@@ -37,8 +51,16 @@ function slugify(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
 
-export function StepActivities({ activities, onChange, meals, onMealsChange }: StepActivitiesProps) {
+export function StepActivities({
+  activities,
+  onChange,
+  meals,
+  onMealsChange,
+  maxActivitiesPerDay,
+  onMaxActivitiesPerDayChange,
+}: StepActivitiesProps) {
   const [custom, setCustom] = useState({ text: '', duration: 60, outdoor: false });
+  const [dragging, setDragging] = useState<number | null>(null);
   const selected = new Set(activities.map((a) => a.id));
 
   const toggle = (id: string) => {
@@ -137,14 +159,41 @@ export function StepActivities({ activities, onChange, meals, onMealsChange }: S
 
       {activities.length > 0 && (
         <section className="selected-activities">
-          <h3>Your activities</h3>
-          <p className="muted">We'll fit these in where they make sense — and only at places with great reviews.</p>
-          <ul>
-            {activities.map((a) => {
+          <h3>Your activities, most important first</h3>
+          <p className="muted">
+            When a day can't fit everything, we go down this list in order and pick the best-rated spot we can fit for each
+            one. Drag or use ↑ ↓ to reorder.
+          </p>
+          <ol>
+            {activities.map((a, i) => {
               const def = findActivityDefinition(a.id);
               const options = durationOptions(def?.minDurationMinutes ?? 15, def?.maxDurationMinutes ?? 300, a.durationMinutes);
               return (
-                <li key={a.id} className="selected-activity">
+                <li
+                  key={a.id}
+                  className={`selected-activity${dragging === i ? ' is-dragging' : ''}`}
+                  draggable
+                  onDragStart={(e) => {
+                    setDragging(i);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragOver={(e) => {
+                    if (dragging === null) return;
+                    e.preventDefault();
+                    if (dragging !== i) {
+                      onChange(moveItem(activities, dragging, i));
+                      setDragging(i);
+                    }
+                  }}
+                  onDragEnd={() => setDragging(null)}
+                  onDrop={(e) => e.preventDefault()}
+                >
+                  <span className="selected-activity__handle" aria-hidden title="Drag to reorder">
+                    ⠿
+                  </span>
+                  <span className="selected-activity__rank" aria-label={`Rank ${i + 1}`}>
+                    {i + 1}
+                  </span>
                   <span className="selected-activity__name">
                     <span aria-hidden>{a.emoji ?? '📍'}</span> {a.label}
                   </span>
@@ -175,22 +224,49 @@ export function StepActivities({ activities, onChange, meals, onMealsChange }: S
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    className={`chip chip--small${a.priority === 'high' ? ' is-selected' : ''}`}
-                    aria-pressed={a.priority === 'high'}
-                    onClick={() => update(a.id, { priority: a.priority === 'high' ? 'normal' : 'high' })}
-                    title="Must-do activities are scheduled first"
-                  >
-                    ★ Must do
-                  </button>
+                  <span className="selected-activity__order">
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={`Move ${a.label} up`}
+                      disabled={i === 0}
+                      onClick={() => onChange(moveItem(activities, i, i - 1))}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={`Move ${a.label} down`}
+                      disabled={i === activities.length - 1}
+                      onClick={() => onChange(moveItem(activities, i, i + 1))}
+                    >
+                      ↓
+                    </button>
+                  </span>
                   <button type="button" className="icon-button" aria-label={`Remove ${a.label}`} onClick={() => toggle(a.id)}>
                     ✕
                   </button>
                 </li>
               );
             })}
-          </ul>
+          </ol>
+          <label className="daily-limit">
+            <span>Activities per day</span>
+            <select
+              className="input input--auto"
+              value={maxActivitiesPerDay ?? 'none'}
+              onChange={(e) => onMaxActivitiesPerDayChange(e.target.value === 'none' ? null : Number(e.target.value))}
+            >
+              <option value="none">No limit</option>
+              {DAILY_LIMITS.map((n) => (
+                <option key={n} value={n}>
+                  Up to {n}
+                </option>
+              ))}
+            </select>
+            <small className="muted">Meals don't count toward this.</small>
+          </label>
         </section>
       )}
 

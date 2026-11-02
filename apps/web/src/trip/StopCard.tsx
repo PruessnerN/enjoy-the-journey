@@ -1,4 +1,5 @@
-import { formatDistance, formatDuration, formatMinutes, LODGING_TYPES, type Stop, type Trip, type TripDay } from '@journey/shared';
+import { formatDistance, formatDuration, formatMinutes, type Stop, type Trip, type TripDay } from '@journey/shared';
+import { STOP_ICONS, stopIconKind } from './stopIcons';
 import { clocksDiffer, formatTime, zoneAbbreviation } from '../lib/time';
 import { IssueList, Rating } from '../components/ui';
 
@@ -9,13 +10,6 @@ export const KIND_LABEL: Record<Stop['kind'], string> = {
   destination: 'Destination',
   custom: 'Your stop',
 };
-
-export function stopEmoji(stop: Stop, trip: Trip): string {
-  if (stop.emoji) return stop.emoji;
-  if (stop.kind === 'lodging') return LODGING_TYPES[trip.request.lodgingType].emoji;
-  if (stop.kind === 'destination') return '🏁';
-  return '📍';
-}
 
 interface StopCardProps {
   trip: Trip;
@@ -38,6 +32,7 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
   const lastMovable = day.stops.length - 2;
   const showZone = clocksDiffer(stop.arrival, stop.timeZone, day.timeZone);
   const label = stop.activityLabel ?? KIND_LABEL[stop.kind];
+  const iconKind = stopIconKind(stop);
 
   return (
     <li id={`stop-${stop.id}`} className={`stop stop--${stop.kind}${focused ? ' is-focused' : ''}`}>
@@ -46,8 +41,8 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
         {!isEnd && stop.durationMinutes > 0 && <span>until {formatTime(stop.departure, stop.timeZone)}</span>}
         {showZone && <span className="stop__zone">{zoneAbbreviation(stop.arrival, stop.timeZone)}</span>}
       </div>
-      <div className="stop__marker" aria-hidden>
-        <span>{stopEmoji(stop, trip)}</span>
+      <div className={`stop__marker stop__marker--${iconKind}`} aria-hidden title={STOP_ICONS[iconKind].label}>
+        <span>{STOP_ICONS[iconKind].emoji}</span>
         <small>{number}</small>
       </div>
       <article className="stop__card card" onClick={onFocus}>

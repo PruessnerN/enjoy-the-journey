@@ -3,6 +3,7 @@ import type { Stop, TripDay } from '@journey/shared';
 import { applyDayEdit } from './dayEdits';
 import { resolveTheme } from './theme';
 import { dayColor } from '../map/colors';
+import { dayStartIconKind, stopIcon, stopIconKind } from '../trip/stopIcons';
 import { clocksDiffer, formatClock, formatDate, formatTime } from './time';
 
 const stop = (id: string, kind: Stop['kind'] = 'activity'): Stop => ({
@@ -75,5 +76,14 @@ describe('theme', () => {
   it('uses a lighter day palette in dark mode', () => {
     expect(dayColor(0, 'light')).not.toBe(dayColor(0, 'dark'));
     expect(dayColor(8, 'dark')).toBe(dayColor(0, 'dark'));
+  });
+});
+
+describe('stop icons', () => {
+  it('uses only driving, lodging and activity icons', () => {
+    const kinds = (['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIconKind({ kind }));
+    expect(kinds).toEqual(['activity', 'activity', 'activity', 'lodging', 'driving']);
+    expect(new Set((['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIcon({ kind }))).size).toBe(3);
+    expect([dayStartIconKind(0), dayStartIconKind(2)]).toEqual(['driving', 'lodging']);
   });
 });

@@ -1,5 +1,5 @@
 import { decodePolyline, type LatLng, type Trip } from '@journey/shared';
-import { stopEmoji } from '../trip/StopCard';
+import { STOP_ICONS, dayStartIconKind, stopIcon } from '../trip/stopIcons';
 import { formatTime } from '../lib/time';
 import type { Theme } from '../lib/theme';
 import { dayColor } from './colors';
@@ -53,7 +53,7 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
       stopId: null,
       position: first.start.location,
       label: '',
-      emoji: '🏠',
+      emoji: STOP_ICONS.driving.emoji,
       title: `Start: ${first.start.name}`,
       kind: 'start',
       color: dayColor(0, theme),
@@ -68,7 +68,7 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
       stopId: null,
       position: day.start.location,
       label: '',
-      emoji: '☀️',
+      emoji: STOP_ICONS[dayStartIconKind(day.index)].emoji,
       title: `Day ${day.index + 1} starts: ${day.start.name}`,
       kind: 'start',
       color: dayColor(day.index, theme),
@@ -85,7 +85,7 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
         stopId: stop.id,
         position: stop.place.location,
         label: selectedDay === null ? '' : String(i + 1),
-        emoji: stopEmoji(stop, trip),
+        emoji: stopIcon(stop),
         title: `${formatTime(isEnd ? stop.arrival : stop.start, stop.timeZone)} · ${stop.place.name}`,
         kind: stop.kind === 'lodging' ? 'lodging' : stop.kind === 'destination' ? 'destination' : 'stop',
         color: dayColor(day.index, theme),

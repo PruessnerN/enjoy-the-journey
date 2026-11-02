@@ -44,7 +44,8 @@ export const placeInfoSchema = z.object({
 export const lodgingTypeSchema = z.enum(['campground', 'vacation_rental', 'hotel']);
 export const mealTypeSchema = z.enum(['breakfast', 'lunch', 'dinner']);
 export const paceSchema = z.enum(['relaxed', 'balanced', 'efficient']);
-export const activityFrequencySchema = z.enum(['once', 'daily', 'often']);
+/** once = once per trip, few = 2–3 times per trip (about every other day), daily = up to once a day, often = up to twice a day. */
+export const activityFrequencySchema = z.enum(['once', 'few', 'daily', 'often']);
 export const activityPrioritySchema = z.enum(['high', 'normal']);
 
 export const activityRequestSchema = z
@@ -80,6 +81,8 @@ export const tripPreferencesSchema = z
     fixedDays: z.number().int().min(1).max(30).nullable(),
     maxDetourMinutes: z.number().int().min(5).max(180),
     minRating: z.number().min(0).max(5),
+    /** Cap on activity stops per day (meals excluded). Null or missing = no limit. */
+    maxActivitiesPerDay: z.number().int().min(1).max(10).nullable().optional(),
     meals: z.object({
       breakfast: z.boolean(),
       lunch: z.boolean(),
@@ -92,6 +95,7 @@ export const tripPreferencesSchema = z
     path: ['arriveByTime'],
   });
 
+/** Activities are listed most important first; the planner fills each day in this order. */
 export const tripRequestSchema = z.object({
   name: z.string().trim().max(120).optional(),
   origin: placeInfoSchema,

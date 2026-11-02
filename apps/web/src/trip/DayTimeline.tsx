@@ -7,6 +7,7 @@ import { clocksDiffer, formatDate, formatTime, zoneAbbreviation } from '../lib/t
 import { AddStopModal } from './AddStopModal';
 import { EditStopModal } from './EditStopModal';
 import { DriveSegment, StopCard } from './StopCard';
+import { STOP_ICONS, dayStartIconKind } from './stopIcons';
 import { SwapStopModal } from './SwapStopModal';
 
 type ModalState = { type: 'edit'; stop: Stop } | { type: 'swap'; stop: Stop } | { type: 'add'; index: number } | null;
@@ -105,8 +106,8 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
             <div className="stop__time">
               <strong>{formatTime(day.departure, day.timeZone)}</strong>
             </div>
-            <div className="stop__marker" aria-hidden>
-              <span>{day.index === 0 ? '🏠' : '☀️'}</span>
+            <div className={`stop__marker stop__marker--${dayStartIconKind(day.index)}`} aria-hidden>
+              <span>{STOP_ICONS[dayStartIconKind(day.index)].emoji}</span>
             </div>
             <div className="stop__start">
               <span className="stop__eyebrow">{day.index === 0 ? 'Start your journey' : 'Good morning! Check out'}</span>

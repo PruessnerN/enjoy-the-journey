@@ -2,6 +2,31 @@ import type { ActivityRequest, TripDay } from '@journey/shared';
 import { placeKey } from './candidates.js';
 import { TUNING } from './tuning.js';
 
+/** Where the day being planned sits in the trip. */
+export interface TripPosition {
+  dayIndex: number;
+  dayCount: number;
+  /**
+   * Spread "2–3 times this trip" activities evenly across days. On when planning a whole trip in
+   * order; off when re-planning a single day (then only the trip-wide maximum applies).
+   */
+  spread: boolean;
+}
+
+/** How many times a "2–3 times this trip" activity should happen on a trip of `dayCount` days. */
+export function fewTimesTarget(dayCount: number): number {
+  const { everyNDays, minTimes } = TUNING.fewTimes;
+  return Math.max(minTimes, Math.min(TUNING.frequency.few.perTrip, Math.ceil(dayCount / everyNDays)));
+}
+
+/**
+ * Uses allowed by the end of day `dayIndex` when spreading `target` uses over `dayCount` days
+ * (e.g. 3 over 6 days → days 1, 3, 5). A day without a good option passes its turn to the next day.
+ */
+export function spreadQuota(target: number, dayIndex: number, dayCount: number): number {
+  return Math.floor((target * (dayIndex + 1)) / dayCount + 0.5);
+}
+
 interface UsageItem {
   place: { placeId?: string; name: string; location: { lat: number; lng: number } };
   activityId?: string;
@@ -26,6 +51,12 @@ export class TripUsage {
     return usage;
   }
 
+  static fromItemLists(lists: readonly (readonly UsageItem[])[]): TripUsage {
+    const usage = new TripUsage();
+    for (const list of lists) usage.commit(list);
+    return usage;
+  }
+
   get usedKeys(): ReadonlySet<string> {
     return this.keys;
   }
@@ -34,11 +65,17 @@ export class TripUsage {
     return this.keys.has(key);
   }
 
-  canUse(activity: ActivityRequest, dayCounts: ReadonlyMap<string, number>): boolean {
+  canUse(activity: ActivityRequest, dayCounts: ReadonlyMap<string, number>, position?: TripPosition): boolean {
     const limits = TUNING.frequency[activity.frequency];
     const today = dayCounts.get(activity.id) ?? 0;
     const total = (this.activityCounts.get(activity.id) ?? 0) + today;
-    return today < limits.perDay && total < limits.perTrip;
+    if (today >= limits.perDay) return false;
+    if (activity.frequency === 'few' && position) {
+      const target = fewTimesTarget(position.dayCount);
+      if (total >= target) return false;
+      return !position.spread || total < spreadQuota(target, position.dayIndex, position.dayCount);
+    }
+    return total < limits.perTrip;
   }
 
   commit(items: readonly UsageItem[]): void {

@@ -118,6 +118,8 @@ export function NewTripPage() {
               onChange={(activities) => update({ activities })}
               meals={draft.preferences.meals}
               onMealsChange={(meals) => update({ preferences: { ...draft.preferences, meals } })}
+              maxActivitiesPerDay={draft.preferences.maxActivitiesPerDay}
+              onMaxActivitiesPerDayChange={(maxActivitiesPerDay) => update({ preferences: { ...draft.preferences, maxActivitiesPerDay } })}
             />
           )}
           {step === 'lodging' && <StepLodging value={draft.lodgingType} onChange={(lodgingType) => update({ lodgingType })} />}

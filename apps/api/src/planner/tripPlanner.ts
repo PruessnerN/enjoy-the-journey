@@ -2,6 +2,7 @@ import { type Issue, type PlaceInfo, type TripDay, type TripRequest, type TripSu
 import type { RouteProfile } from '../geo/routeProfile.js';
 import type { DataProvider } from '../providers/types.js';
 import { buildDayContext, computeDayCount, withTimeZone } from './context.js';
+import { plannerProblems, repairDay, type BuildDayArgs, type BuiltDay } from './dayBuilder.js';
 import { planDay } from './dayPlanner.js';
 import { PlanningError } from './errors.js';
 import { finalizeDay, profileFromRoute, toWaypoint } from './finalize.js';
@@ -76,10 +77,12 @@ export async function planTrip(rawRequest: TripRequest, provider: DataProvider):
     }),
   );
 
-  const usage = new TripUsage();
-  usage.commit(nights);
-  const plans = prepared.map((day) => {
-    const result = planDay({
+  const dayArgs = (k: number, usage: TripUsage, spread: boolean): BuildDayArgs => {
+    const day = prepared[k]!;
+    return {
+      provider,
+      index: k,
+      start: day.start,
       profile: day.dayProfile,
       ctx: day.ctx,
       end: day.end,
@@ -92,23 +95,33 @@ export async function planTrip(rawRequest: TripRequest, provider: DataProvider):
       excludeKeys: new Set(),
       minRating: request.preferences.minRating,
       maxDetourMinutes: request.preferences.maxDetourMinutes,
-    });
+      position: { dayIndex: k, dayCount, spread },
+      maxActivitiesPerDay: request.preferences.maxActivitiesPerDay ?? null,
+    };
+  };
+
+  // Fill days in order so places and "once per trip" limits are shared, then route them all at once.
+  const usage = new TripUsage();
+  usage.commit(nights);
+  const plans = prepared.map((_, k) => {
+    const result = planDay(dayArgs(k, usage, true));
     usage.commit(result.items);
     return result;
   });
-
-  const days = await Promise.all(
-    plans.map((plan, k) =>
-      finalizeDay({
-        provider,
-        index: k,
-        ctx: prepared[k]!.ctx,
-        start: prepared[k]!.start,
-        items: plan.items,
-        extraIssues: plan.issues,
-      }),
-    ),
+  const built: BuiltDay[] = await Promise.all(
+    plans.map(async (plan, k) => ({
+      items: plan.items,
+      day: await finalizeDay({ provider, index: k, ctx: prepared[k]!.ctx, start: prepared[k]!.start, items: plan.items, extraIssues: plan.issues }),
+    })),
   );
+  // Days that real drive times broke are re-planned one at a time, never reusing other days' places.
+  for (let k = 0; k < built.length; k++) {
+    if (plannerProblems(built[k]!.day) === 0) continue;
+    const others = TripUsage.fromItemLists([nights, ...built.filter((_, j) => j !== k).map((b) => b.items)]);
+    // `others` includes later days, so the even-spread quota no longer applies; keep the trip maximum.
+    built[k] = await repairDay(dayArgs(k, others, false), built[k]!);
+  }
+  const days = built.map((b) => b.day);
 
   const issues: Issue[] = [];
   for (const activity of request.activities) {

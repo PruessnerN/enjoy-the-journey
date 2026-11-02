@@ -33,12 +33,15 @@ export function bayesianRating(rating: number | undefined, count: number | undef
   return (rating * count + priorMean * priorWeight) / (count + priorWeight);
 }
 
-/** Hard quality gate: the user's minimum rating applies to anything with enough reviews. */
+/**
+ * Hard quality gate: nothing rated below the user's minimum, ever. A high rating from only a
+ * couple of reviews isn't trusted, so such places count as unrated.
+ */
 export function meetsRating(place: PlaceInfo, minRating: number, allowUnrated: boolean): boolean {
-  if (place.rating === undefined || (place.userRatingCount ?? 0) < TUNING.quality.minReviewCount) {
-    return allowUnrated;
-  }
-  return place.rating >= minRating;
+  if (place.rating === undefined) return allowUnrated;
+  if (place.rating < minRating) return false;
+  if ((place.userRatingCount ?? 0) < TUNING.quality.minReviewCount) return allowUnrated;
+  return true;
 }
 
 export function qualityScore(place: PlaceInfo): number {

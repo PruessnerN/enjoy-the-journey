@@ -4,6 +4,7 @@ import { formatDuration, type Trip } from '@journey/shared';
 import { api } from '../api/client';
 import { useDeleteTrip, useRenameTrip } from '../api/hooks';
 import { formatDate } from '../lib/time';
+import { STOP_ICONS } from './stopIcons';
 
 export function TripHeader({ trip, onOpenSettings }: { trip: Trip; onOpenSettings: () => void }) {
   const rename = useRenameTrip(trip.id);
@@ -62,7 +63,7 @@ export function TripHeader({ trip, onOpenSettings }: { trip: Trip; onOpenSetting
           <li title={`Driving straight through would take ${formatDuration(s.directDriveSeconds)}`}>
             🚗 {formatDuration(s.totalDriveSeconds)} driving <span className="muted">({formatDuration(s.directDriveSeconds)} direct)</span>
           </li>
-          <li>🎯 {s.activityCount} activities</li>
+          <li>{STOP_ICONS.activity.emoji} {s.activityCount} activities</li>
           <li>🍽️ {s.mealCount} meals</li>
           {trip.dataSource === 'demo' && <li className="pill--demo">Demo data</li>}
         </ul>

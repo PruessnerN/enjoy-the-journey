@@ -18,7 +18,7 @@ import type { TripRepository } from '../db/tripRepository.js';
 import { badRequest, notFound } from '../http/errors.js';
 import { meetsRating, placeKey, toCandidate } from '../planner/candidates.js';
 import { buildDayContext, withTimeZone } from '../planner/context.js';
-import { planDay } from '../planner/dayPlanner.js';
+import { buildDay } from '../planner/dayBuilder.js';
 import { finalizeDay, profileFromDay, profileFromRoute, toWaypoint } from '../planner/finalize.js';
 import { enabledMeals, gatherDayCandidates } from '../planner/gather.js';
 import { lodgingLinks, townFromAddress } from '../planner/links.js';
@@ -150,7 +150,10 @@ export class TripService {
       const excludeKeys = new Set(freshIdeas ? middle.filter((s) => !s.locked).map((s) => placeKey(s.place)) : []);
       const end: SeqItem = { ...toSeqItem(endStop, endStop), seconds: profile.totalSeconds, detourSeconds: 0 };
 
-      const result = planDay({
+      const built = await buildDay({
+        provider: this.provider,
+        index,
+        start: withTimeZone(day.start),
         profile,
         ctx,
         end,
@@ -163,8 +166,10 @@ export class TripService {
         excludeKeys,
         minRating: request.preferences.minRating,
         maxDetourMinutes: request.preferences.maxDetourMinutes,
+        position: { dayIndex: index, dayCount: trip.days.length, spread: false },
+        maxActivitiesPerDay: request.preferences.maxActivitiesPerDay ?? null,
       });
-      trip.days[index] = await this.finalize(trip, index, result.items, day.startTime, result.issues);
+      trip.days[index] = built.day;
       return trip;
     });
   }

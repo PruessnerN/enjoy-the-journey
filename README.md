@@ -86,8 +86,11 @@ All settings are environment variables (see [.env.example](.env.example)):
 ## Using it
 
 **Plan:** origin → destination → activities (at least one) → lodging type (required) → schedule &
-pace → review. Each activity can be *once per trip*, *once a day* or *up to twice a day*, can be
-marked **must do**, and has an adjustable "time there". You can also type in your own activity
+pace → review. Activities form a **ranked list** (drag or ↑ ↓ to reorder, most important first).
+When a day can't fit everything, the planner goes down the list in order and picks the best-rated
+spot it can fit for each. Each activity can be *once per trip*, *2–3 times per trip* (about every other
+day, spread across the trip), *once a day* or *up to twice a day*, and has an adjustable "time
+there". You can also cap **activities per day** (meals don't count). You can also type in your own activity
 (e.g. "bookstores").
 
 **Planning mode** (the trip page):
@@ -127,9 +130,9 @@ logic.
 3. **Candidates along each day:** it routes between that day's start and end, then searches *along
    the route* for each activity. It searches for restaurants only where you could plausibly be at
    mealtime. Each place gets a position along the drive and an estimated detour.
-4. **Greedy fill with a real timeline:** it repeatedly tries the best remaining candidate for each
-   activity (must-dos first, highest Bayesian-adjusted rating, shortest detour) and keeps it only
-   if the *whole* day still works:
+4. **Greedy fill with a real timeline:** going down your ranked activity list, it tries the best
+   remaining candidate for each activity (highest Bayesian-adjusted rating, shortest detour) and
+   keeps it only if the *whole* day still works and the daily activity limit isn't reached:
    - meals start inside their windows (lunch 11–2, dinner 5–8…), at a well-rated restaurant that's
      open, near where you'll be at mealtime;
    - places are open for the entire visit (it will wait a little if they open soon);
@@ -138,9 +141,14 @@ logic.
    - no place is visited twice, and per-day / per-trip activity limits are respected.
 
    If a stop doesn't fit at its typical length, it tries the shorter length (e.g. 9 holes instead
-   of 18).
+   of 18). Candidates also earn a bonus for breaking up long stretches of driving, so stops spread
+   along the route instead of clustering in the biggest town (usually the one you start from).
 5. **Accurate timing:** each final day is routed through all its stops for real drive times, and
    the timeline (including warnings) is computed with the same scheduling code the planner used.
+6. **Repair:** planning uses estimated detours (straight-line distance), which can be badly off on
+   mountain roads. If the real routing breaks a day (late arrival, closed, after dark), the stop
+   whose detour was most underestimated gets its real detour recorded, and the day is re-planned.
+   This costs one extra route call per round, up to 2 rounds per day.
 
 ## Project structure
 

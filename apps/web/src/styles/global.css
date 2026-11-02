@@ -887,7 +887,7 @@ textarea.input {
   border-top: 1px dashed var(--line);
 }
 
-.selected-activities ul {
+.selected-activities ol {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -908,8 +908,49 @@ textarea.input {
 }
 
 .selected-activity__name {
-  flex: 1 1 180px;
+  flex: 1 1 160px;
   font-weight: 700;
+}
+
+.selected-activity__handle {
+  color: var(--muted);
+  cursor: grab;
+  user-select: none;
+}
+
+.selected-activity__rank {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.8rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.selected-activity__order {
+  display: inline-flex;
+}
+
+.selected-activity.is-dragging {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.daily-limit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+  font-weight: 700;
+}
+
+.daily-limit small {
+  font-weight: 400;
 }
 
 .selected-activity select:nth-of-type(1) {
@@ -1637,18 +1678,17 @@ textarea.input {
   text-align: center;
 }
 
-.stop--meal .stop__marker {
-  border-color: var(--accent-strong);
-}
-
-.stop--lodging .stop__marker,
-.stop--destination .stop__marker {
-  border-color: var(--lodging);
+.stop__marker--lodging,
+.stop__marker--driving {
   width: 50px;
   height: 50px;
 }
 
-.stop--start .stop__marker {
+.stop__marker--lodging {
+  border-color: var(--lodging);
+}
+
+.stop__marker--driving {
   border-color: var(--accent);
 }
 
@@ -1876,8 +1916,8 @@ textarea.input {
     font-size: 1.05rem;
   }
 
-  .stop--lodging .stop__marker,
-  .stop--destination .stop__marker {
+  .stop__marker--lodging,
+  .stop__marker--driving {
     width: 40px;
     height: 40px;
   }

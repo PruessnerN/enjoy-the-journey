@@ -1,6 +1,13 @@
-import { LODGING_TYPES, MEALS, MEAL_ORDER, PACES, formatMinutes } from '@journey/shared';
+import { LODGING_TYPES, MEALS, MEAL_ORDER, PACES, formatMinutes, type ActivityFrequency } from '@journey/shared';
 import { formatClock, formatDate } from '../lib/time';
 import type { TripDraft } from './draft';
+
+const FREQUENCY_SUMMARY: Record<ActivityFrequency, string> = {
+  once: 'once',
+  few: '2–3 times',
+  daily: 'daily',
+  often: 'up to twice a day',
+};
 
 export function StepReview({ draft, onNameChange }: { draft: TripDraft; onNameChange: (name: string) => void }) {
   const p = draft.preferences;
@@ -26,14 +33,16 @@ export function StepReview({ draft, onNameChange }: { draft: TripDraft; onNameCh
         </dd>
         <dt>Activities</dt>
         <dd>
-          <ul className="review__activities">
+          <ol className="review__activities">
             {draft.activities.map((a) => (
               <li key={a.id}>
-                {a.emoji} {a.label} · ~{formatMinutes(a.durationMinutes)}
-                {a.priority === 'high' && ' · ★ must do'}
+                {a.emoji} {a.label} · ~{formatMinutes(a.durationMinutes)} · {FREQUENCY_SUMMARY[a.frequency]}
               </li>
             ))}
-          </ul>
+          </ol>
+          <small className="muted">
+            {p.maxActivitiesPerDay ? `Up to ${p.maxActivitiesPerDay} a day, ` : ''}most important first
+          </small>
         </dd>
         <dt>Meals</dt>
         <dd>{meals.length ? `Stop for ${meals.join(', ')}` : 'No meal stops'}</dd>
