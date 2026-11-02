@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatDuration } from '@journey/shared';
 import { useDeleteTrip, useTrips } from '../api/hooks';
+import { Icon } from '../components/Icon';
 import { ErrorNote, Spinner } from '../components/ui';
 import { formatDate } from '../lib/time';
 
@@ -12,47 +13,17 @@ export function HomePage() {
     <div className="home">
       <section className="hero">
         <div className="hero__text">
-          <h1>
-            Don't just get there.
-            <br />
-            <span>Enjoy the journey.</span>
-          </h1>
+          <p className="eyebrow">Road trip planner</p>
+          <h1>The long way, on purpose.</h1>
           <p>
-            Tell us where you're starting, where you're headed and what you love to do. We'll turn the drive into days full of
-            top-rated stops — disc golf, hikes, local food, hidden gems — with a comfy place to sleep every night.
+            Pick a start, a destination and the things you like to do. Enjoy the Journey splits the drive into days, finds
+            well-reviewed stops along the route, and ends each night somewhere to sleep.
           </p>
           <Link to="/new" className="button button--primary button--large">
-            Plan a new journey
+            Plan a trip
           </Link>
         </div>
-        <div className="hero__art" aria-hidden>
-          <svg viewBox="0 0 400 220">
-            <defs>
-              <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
-                <stop className="hero-sky-top" offset="0" stopColor="#ffe8cc" />
-                <stop className="hero-sky-bottom" offset="1" stopColor="#fff7ee" />
-              </linearGradient>
-            </defs>
-            <rect width="400" height="220" rx="24" fill="url(#sky)" />
-            <circle className="hero-sun" cx="300" cy="70" r="34" fill="#f4a259" />
-            <g className="hero-stars" fill="#fff">
-              <circle cx="60" cy="40" r="1.6" />
-              <circle cx="130" cy="28" r="1.2" />
-              <circle cx="200" cy="52" r="1.8" />
-              <circle cx="250" cy="22" r="1.2" />
-              <circle cx="360" cy="34" r="1.5" />
-            </g>
-            <path d="M0 160 L80 90 L150 150 L220 70 L320 160 Z" className="hero-mountain-far" fill="#5b8e7d" opacity="0.8" />
-            <path d="M120 170 L210 100 L300 170 Z" className="hero-mountain-near" fill="#0f4c5c" opacity="0.85" />
-            <path d="M-10 210 C 90 160, 150 200, 220 175 S 360 150, 410 170" fill="none" stroke="#3b3b3b" strokeWidth="16" strokeLinecap="round" />
-            <path d="M-10 210 C 90 160, 150 200, 220 175 S 360 150, 410 170" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="10 10" />
-            <g className="hero__pins">
-              <text x="70" y="160" fontSize="26">🥏</text>
-              <text x="190" y="150" fontSize="26">🍔</text>
-              <text x="320" y="140" fontSize="26">🏕️</text>
-            </g>
-          </svg>
-        </div>
+        <TopoArt />
       </section>
 
       <section className="trips">
@@ -85,12 +56,57 @@ export function HomePage() {
                   if (confirm(`Delete "${t.name}"? This can't be undone.`)) remove.mutate(t.id);
                 }}
               >
-                🗑
+                <Icon name="trash" />
               </button>
             </li>
           ))}
         </ul>
       </section>
+    </div>
+  );
+}
+
+/** A small topographic-map drawing: contour lines, a dashed route and three waypoints. */
+function TopoArt() {
+  const contours = [
+    'M40 210 C 60 150, 140 120, 190 140 S 260 210, 230 250',
+    'M70 205 C 85 165, 140 145, 178 158 S 230 205, 210 236',
+    'M100 200 C 110 178, 145 166, 168 174 S 200 200, 188 220',
+    'M300 40 C 360 20, 440 60, 430 120 S 350 170, 320 130 S 270 60, 300 40',
+    'M318 62 C 360 46, 414 78, 406 116 S 356 146, 334 120 S 296 76, 318 62',
+    'M338 82 C 362 74, 388 92, 384 112 S 358 126, 348 112 S 324 90, 338 82',
+  ];
+  return (
+    <div className="hero__art" aria-hidden>
+      <svg viewBox="0 0 480 300">
+        <rect className="topo__paper" width="480" height="300" />
+        <g className="topo__grid">
+          {[60, 120, 180, 240].map((y) => (
+            <line key={`h${y}`} x1="0" x2="480" y1={y} y2={y} />
+          ))}
+          {[80, 160, 240, 320, 400].map((x) => (
+            <line key={`v${x}`} y1="0" y2="300" x1={x} x2={x} />
+          ))}
+        </g>
+        <path className="topo__water" d="M0 268 C 70 250, 120 286, 200 272 S 330 240, 480 262 L480 300 L0 300 Z" />
+        <g className="topo__contours">
+          {contours.map((d) => (
+            <path key={d} d={d} />
+          ))}
+        </g>
+        <path className="topo__route" d="M30 70 C 110 60, 130 120, 200 112 S 300 190, 360 200 S 440 230, 455 250" />
+        <g className="topo__waypoints">
+          <circle cx="30" cy="70" r="7" />
+          <circle cx="200" cy="112" r="6" />
+          <circle cx="360" cy="200" r="6" />
+          <rect x="447" y="242" width="16" height="16" />
+        </g>
+        <g className="topo__labels">
+          <text x="44" y="60">START</text>
+          <text x="212" y="104">DAY 1</text>
+          <text x="372" y="194">DAY 2</text>
+        </g>
+      </svg>
     </div>
   );
 }

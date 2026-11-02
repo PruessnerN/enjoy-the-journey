@@ -1,19 +1,25 @@
 import { randomUUID } from 'node:crypto';
 import {
   LODGING_TYPES,
-  MEALS,
-  findActivityDefinition,
+  defaultSearchCategory,
+  searchCategoriesFor,
+  swapGroupFor,
+  type Bounds,
   type DayUpdate,
   type Issue,
   type LatLng,
   type PlaceCandidate,
   type Stop,
   type StopInput,
+  type SwapGroup,
+  type SwapSearchQuery,
+  type SwapSearchResult,
   type Trip,
   type TripDay,
   type TripListItem,
   type TripRequest,
 } from '@journey/shared';
+import { boundsAround } from '../geo/geo.js';
 import type { TripRepository } from '../db/tripRepository.js';
 import { badRequest, notFound } from '../http/errors.js';
 import { meetsRating, placeKey, toCandidate } from '../planner/candidates.js';
@@ -24,10 +30,13 @@ import { enabledMeals, gatherDayCandidates } from '../planner/gather.js';
 import { lodgingLinks, townFromAddress } from '../planner/links.js';
 import type { SeqItem } from '../planner/sequence.js';
 import { planTrip, summarizeTrip } from '../planner/tripPlanner.js';
+import { TUNING } from '../planner/tuning.js';
 import { TripUsage } from '../planner/usage.js';
 import type { DataProvider } from '../providers/types.js';
 import { KeyedMutex } from '../util/keyedMutex.js';
 import { buildCalendar } from './calendar.js';
+
+const GROUP_NOUN: Record<SwapGroup, string> = { activity: 'activity', meal: 'meal stop', lodging: 'place to stay' };
 
 /** Issues that come from planning (not from timing) and should survive edits of the same place. */
 const STICKY_ISSUES = new Set<Issue['code']>(['book_rental', 'no_lodging_found', 'no_restaurant_found']);
@@ -112,11 +121,14 @@ export class TripService {
       if (isFinal) {
         end.place = trip.request.destination;
       } else if (placeKey(end.place) !== placeKey(oldEnd.place)) {
+        // The night may now be a different kind of lodging (e.g. campground swapped for a hotel).
+        const lodgingType = end.lodgingType ?? trip.request.lodgingType;
         const town = townFromAddress(end.place.address);
-        end.links = lodgingLinks(trip.request.lodgingType, end.place, town, day.date, trip.request.preferences.travelers);
+        end.lodgingType = lodgingType;
+        end.links = lodgingLinks(lodgingType, end.place, town, day.date, trip.request.preferences.travelers);
         end.planningIssues = [];
-        end.emoji ??= LODGING_TYPES[trip.request.lodgingType].emoji;
-        end.activityLabel ??= LODGING_TYPES[trip.request.lodgingType].label;
+        end.emoji ??= LODGING_TYPES[lodgingType].emoji;
+        end.activityLabel ??= LODGING_TYPES[lodgingType].label;
       }
 
       trip.days[index] = await this.finalize(trip, index, items, update.startTime ?? day.startTime);
@@ -174,38 +186,60 @@ export class TripService {
     });
   }
 
-  /** Similar places near a stop, ranked the same way the planner ranks them. */
-  async alternatives(id: string, index: number, stopId: string): Promise<PlaceCandidate[]> {
+  /**
+   * Swap search: places of one category inside an area (by default, around the stop), ranked the
+   * way the planner ranks them. The category must belong to the stop's group, so a meal can only
+   * be swapped for somewhere to eat and lodging only for somewhere to stay.
+   */
+  async swapSearch(id: string, index: number, stopId: string, query: SwapSearchQuery): Promise<SwapSearchResult> {
     const trip = await this.get(id);
     const day = dayAt(trip, index);
     const stop = day.stops.find((s) => s.id === stopId);
     if (!stop) throw notFound('Stop');
+    const group = swapGroupFor(stop.kind);
+    if (!group) throw badRequest("Your destination can't be swapped here. Change it in Trip settings.");
 
-    const { query, includedType } = searchTermsFor(stop, trip.request);
-    const radiusMeters = stop.kind === 'lodging' ? 35_000 : 25_000;
-    const places = await this.provider.places.searchText({
-      query,
-      ...(includedType ? { includedType } : {}),
-      near: { center: stop.place.location, radiusMeters },
-      maxResults: 20,
-    });
+    const categoryId = query.category ?? defaultSearchCategory(stop, trip.request.activities, trip.request.lodgingType);
+    const category = searchCategoriesFor(group, trip.request.activities).find((c) => c.id === categoryId);
+    if (!category) {
+      throw badRequest(`This ${GROUP_NOUN[group]} can only be swapped for another ${GROUP_NOUN[group]}.`);
+    }
+
+    const { swap } = TUNING;
+    const area: Bounds =
+      query.south !== undefined && query.west !== undefined && query.north !== undefined && query.east !== undefined
+        ? { south: query.south, west: query.west, north: query.north, east: query.east }
+        : boundsAround(stop.place.location, swap.areaRadiusKm[group]);
+    if (area.south >= area.north || area.west >= area.east) throw badRequest('Invalid map area.');
+    if (area.north - area.south > swap.maxAreaSpanDegrees.lat || area.east - area.west > swap.maxAreaSpanDegrees.lng) {
+      throw badRequest('That area is too big to search. Zoom in a little and try again.');
+    }
+
+    const keyword = query.q?.trim();
+    const page = await this.provider.places.searchPage(
+      {
+        query: keyword ? `${keyword} ${category.query}` : category.query,
+        ...(category.includedType ? { includedType: category.includedType } : {}),
+        within: area,
+        maxResults: swap.resultsPerPage,
+      },
+      query.pageToken,
+    );
+
     const used = new Set(trip.days.flatMap((d) => d.stops.map((s) => placeKey(s.place))));
     const minRating = trip.request.preferences.minRating;
     const profile = profileFromDay(day);
-    return places
+    const results = page.places
       .filter((p) => !used.has(placeKey(p)))
       .map((p) => toCandidate(p, profile))
-      .sort(
-        (a, b) =>
-          Number(meetsRating(b.place, minRating, true)) - Number(meetsRating(a.place, minRating, true)) || b.score - a.score,
-      )
-      .slice(0, 15)
+      .sort((a, b) => Number(meetsRating(b.place, minRating, true)) - Number(meetsRating(a.place, minRating, true)) || b.score - a.score)
       .map((c) => ({
         place: c.place,
         detourMinutes: Math.round(c.detourSeconds / 60),
         distanceFromRouteMeters: Math.round(c.offRouteMeters),
         score: Math.round(c.score * 100) / 100,
       }));
+    return { category: category.id, area, results, ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}) };
   }
 
   /** Free-text search near a day's route, e.g. a place the user found on their own. */
@@ -287,6 +321,7 @@ function toSeqItem(input: StopInput | Stop, previous?: Stop): SeqItem {
     planningIssues: sticky,
   };
   if (input.mealType) item.mealType = input.mealType;
+  if (input.lodgingType) item.lodgingType = input.lodgingType;
   if (input.outdoor !== undefined) item.outdoor = input.outdoor;
   if (input.pinnedStart) item.pinnedStart = input.pinnedStart;
   if (input.activityId) item.activityId = input.activityId;
@@ -295,18 +330,4 @@ function toSeqItem(input: StopInput | Stop, previous?: Stop): SeqItem {
   if (input.notes) item.notes = input.notes;
   if (input.links?.length) item.links = input.links;
   return item;
-}
-
-function searchTermsFor(stop: Stop, request: TripRequest): { query: string; includedType?: string } {
-  if (stop.kind === 'lodging') {
-    const def = LODGING_TYPES[request.lodgingType];
-    return { query: def.query, ...(def.includedType ? { includedType: def.includedType } : {}) };
-  }
-  if (stop.kind === 'meal' && stop.mealType) {
-    const meal = MEALS[stop.mealType];
-    return { query: meal.query, ...(meal.includedType ? { includedType: meal.includedType } : {}) };
-  }
-  const activity = request.activities.find((a) => a.id === stop.activityId) ?? (stop.activityId ? findActivityDefinition(stop.activityId) : undefined);
-  if (activity) return { query: activity.query, ...(activity.includedType ? { includedType: activity.includedType } : {}) };
-  return { query: stop.activityLabel ?? stop.place.primaryTypeLabel ?? 'things to do' };
 }

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { LatLng, PlaceInfo, PlaceSuggestion } from '@journey/shared';
 import { api } from '../api/client';
 import { randomId } from '../lib/id';
+import { Icon } from './Icon';
 
 interface PlaceAutocompleteProps {
   label: string;
@@ -77,7 +78,7 @@ export function PlaceAutocomplete({ label, placeholder, value, onChange, bias, a
         <span className="field__label">{label}</span>
         <div className="place-chip">
           <span className="place-chip__pin" aria-hidden>
-            📍
+            <Icon name="pin" size={20} />
           </span>
           <span className="place-chip__text">
             <strong>{value.name}</strong>

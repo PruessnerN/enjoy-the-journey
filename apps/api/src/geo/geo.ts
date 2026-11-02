@@ -1,4 +1,4 @@
-import type { LatLng } from '@journey/shared';
+import type { Bounds, LatLng } from '@journey/shared';
 
 const EARTH_RADIUS_M = 6_371_008.8;
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
@@ -102,4 +102,16 @@ export function simplifyToMaxPoints(points: LatLng[], maxPoints: number, initial
     result = simplifyPath(points, tolerance);
   }
   return result;
+}
+
+/** A rectangle reaching `radiusKm` from `center` in each direction. */
+export function boundsAround(center: LatLng, radiusKm: number): Bounds {
+  const dLat = radiusKm / 111.132;
+  const dLng = radiusKm / (111.32 * Math.max(0.05, Math.cos(toRad(center.lat))));
+  return {
+    south: Math.max(-90, center.lat - dLat),
+    north: Math.min(90, center.lat + dLat),
+    west: Math.max(-180, center.lng - dLng),
+    east: Math.min(180, center.lng + dLng),
+  };
 }

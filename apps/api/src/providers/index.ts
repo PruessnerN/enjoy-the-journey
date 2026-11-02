@@ -10,6 +10,7 @@ import type {
   PlacesProvider,
   RouteResult,
   RoutesProvider,
+  SearchPage,
   TextSearchRequest,
   Waypoint,
 } from './types.js';
@@ -27,6 +28,7 @@ export interface ProviderOptions {
  */
 class CachedPlaces implements PlacesProvider {
   private readonly searchCache: TtlCache<PlaceInfo[]>;
+  private readonly pageCache: TtlCache<SearchPage>;
   private readonly placeCache: TtlCache<PlaceInfo>;
   private readonly autocompleteCache: TtlCache<PlaceSuggestion[]>;
 
@@ -36,6 +38,7 @@ class CachedPlaces implements PlacesProvider {
     private readonly limit: Limiter,
   ) {
     this.searchCache = new TtlCache(ttlMs, 3_000);
+    this.pageCache = new TtlCache(ttlMs, 1_000);
     this.placeCache = new TtlCache(ttlMs, 3_000);
     this.autocompleteCache = new TtlCache(Math.min(ttlMs, 30 * 60_000), 1_000);
   }
@@ -53,6 +56,12 @@ class CachedPlaces implements PlacesProvider {
 
   searchText(request: TextSearchRequest): Promise<PlaceInfo[]> {
     return this.searchCache.getOrLoad(JSON.stringify(request), () => this.limit(() => this.inner.searchText(request)));
+  }
+
+  searchPage(request: TextSearchRequest, pageToken?: string): Promise<SearchPage> {
+    return this.pageCache.getOrLoad(JSON.stringify([request, pageToken ?? null]), () =>
+      this.limit(() => this.inner.searchPage(request, pageToken)),
+    );
   }
 }
 

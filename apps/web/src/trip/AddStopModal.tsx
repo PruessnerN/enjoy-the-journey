@@ -102,7 +102,7 @@ export function AddStopModal({ trip, day, index, onAdd, onClose }: AddStopModalP
   const previous = index === 0 ? day.start.name : day.stops[index - 1]!.place.name;
 
   return (
-    <Modal title="Add a stop" onClose={onClose} wide>
+    <Modal title="Add a stop" onClose={onClose} size="wide">
       <p className="muted">
         Searching near <strong>{previous}</strong>. The timeline updates automatically once you add it.
       </p>
@@ -136,7 +136,7 @@ export function AddStopModal({ trip, day, index, onAdd, onClose }: AddStopModalP
                 className={`chip chip--small${purpose.type === 'activity' && purpose.id === a.id ? ' is-selected' : ''}`}
                 onClick={() => pickActivity(a.id)}
               >
-                {a.emoji ?? '📍'} {a.label}
+                {a.label}
               </button>
             ))}
             {MEAL_ORDER.map((m) => (

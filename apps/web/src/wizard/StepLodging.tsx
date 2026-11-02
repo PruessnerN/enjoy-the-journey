@@ -20,9 +20,6 @@ export function StepLodging({ value, onChange }: { value: LodgingType | null; on
             className={`option-card${value === type ? ' is-selected' : ''}`}
             onClick={() => onChange(type)}
           >
-            <span className="option-card__emoji" aria-hidden>
-              {def.emoji}
-            </span>
             <strong>{def.label}</strong>
             <span>{def.description}</span>
             <small>{NOTES[type]}</small>

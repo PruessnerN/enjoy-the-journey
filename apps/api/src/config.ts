@@ -13,6 +13,7 @@ const envSchema = z.object({
   CACHE_TTL_MINUTES: z.coerce.number().min(0).default(360),
   UPSTREAM_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(6),
   PLANS_PER_HOUR_PER_IP: z.coerce.number().int().min(1).default(60),
+  SEARCHES_PER_HOUR_PER_IP: z.coerce.number().int().min(1).default(300),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 
@@ -27,6 +28,7 @@ export type AppConfig = {
   cacheTtlMinutes: number;
   upstreamConcurrency: number;
   plansPerHourPerIp: number;
+  searchesPerHourPerIp: number;
   logLevel: z.infer<typeof envSchema>['LOG_LEVEL'];
 };
 
@@ -51,6 +53,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     cacheTtlMinutes: e.CACHE_TTL_MINUTES,
     upstreamConcurrency: e.UPSTREAM_CONCURRENCY,
     plansPerHourPerIp: e.PLANS_PER_HOUR_PER_IP,
+    searchesPerHourPerIp: e.SEARCHES_PER_HOUR_PER_IP,
     logLevel: e.LOG_LEVEL,
   };
 }

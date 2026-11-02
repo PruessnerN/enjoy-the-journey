@@ -30,7 +30,7 @@ export async function buildApp({ config, repo, provider }: AppDependencies): Pro
   const trips = new TripService(repo, provider);
   registerSystemRoutes(app, config, provider, () => repo.ping());
   registerPlaceRoutes(app, provider);
-  registerTripRoutes(app, trips, config.plansPerHourPerIp);
+  registerTripRoutes(app, trips, { plansPerHour: config.plansPerHourPerIp, searchesPerHour: config.searchesPerHourPerIp });
 
   return app;
 }

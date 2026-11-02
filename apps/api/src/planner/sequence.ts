@@ -1,4 +1,4 @@
-import type { ActivityRequest, Issue, Link, MealType, PlaceInfo, StopKind } from '@journey/shared';
+import type { ActivityRequest, Issue, Link, LodgingType, MealType, PlaceInfo, StopKind } from '@journey/shared';
 import { haversineMeters } from '../geo/geo.js';
 
 /** A stop in the planner's working sequence for a single day. */
@@ -12,6 +12,7 @@ export interface SeqItem {
   /** Extra drive time to reach the place from the route and come back. */
   detourSeconds: number;
   mealType?: MealType;
+  lodgingType?: LodgingType;
   outdoor?: boolean;
   pinnedStart?: string | null;
   locked?: boolean;

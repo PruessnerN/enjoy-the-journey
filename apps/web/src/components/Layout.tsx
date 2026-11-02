@@ -9,17 +9,15 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="app">
       <header className="topbar">
         <Link to="/" className="brand">
-          <img src="/favicon.svg" alt="" width={32} height={32} />
-          <span>
-            Enjoy the <em>Journey</em>
-          </span>
+          <img src="/favicon.svg" alt="" width={28} height={28} />
+          <span>Enjoy the Journey</span>
         </Link>
         <nav className="topbar__nav">
           <Link to="/" className="topbar__link">
             My trips
           </Link>
           <Link to="/new" className="button button--primary button--small">
-            + New journey
+            New trip
           </Link>
           <ThemeToggle />
         </nav>

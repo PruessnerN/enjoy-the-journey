@@ -1,4 +1,4 @@
-import { decodePolyline, encodePolyline, type LatLng, type PlaceInfo, type PlaceSuggestion } from '@journey/shared';
+import { decodePolyline, encodePolyline, type Bounds, type LatLng, type PlaceInfo, type PlaceSuggestion } from '@journey/shared';
 import { bearingDegrees, destinationPoint, haversineMeters, interpolate } from '../../geo/geo.js';
 import { timeZoneAt } from '../../geo/time.js';
 import { hashString, pick, seededRandom } from '../../util/random.js';
@@ -10,6 +10,7 @@ import {
   type RouteLegResult,
   type RouteResult,
   type RoutesProvider,
+  type SearchPage,
   type TextSearchRequest,
   type Waypoint,
 } from '../types.js';
@@ -18,6 +19,7 @@ import { themeFor } from './themes.js';
 
 const CITY_PREFIX = 'demo:city:';
 const PLACE_PREFIX = 'demo:place:';
+const PAGE_PREFIX = 'demo-page:';
 
 interface City {
   name: string;
@@ -93,12 +95,28 @@ class DemoPlacesProvider implements PlacesProvider {
   }
 
   async searchText(request: TextSearchRequest): Promise<PlaceInfo[]> {
+    return (await this.searchPage(request)).places;
+  }
+
+  async searchPage(request: TextSearchRequest, pageToken?: string): Promise<SearchPage> {
+    const pageSize = Math.min(20, request.maxResults ?? 20);
+    const all = this.generate(request);
+    const page = pageToken?.startsWith(PAGE_PREFIX) ? Number(pageToken.slice(PAGE_PREFIX.length)) || 0 : 0;
+    const start = page * pageSize;
+    // Like Google: at most 3 pages.
+    const hasMore = all.length > start + pageSize && page < 2;
+    return { places: all.slice(start, start + pageSize), ...(hasMore ? { nextPageToken: `${PAGE_PREFIX}${page + 1}` } : {}) };
+  }
+
+  private generate(request: TextSearchRequest): PlaceInfo[] {
     const theme = themeFor(request.query, request.includedType);
     const anchors = request.alongRoutePolyline
       ? anchorsAlongPath(decodePolyline(request.alongRoutePolyline))
-      : request.near
-        ? anchorsAround(request.near.center, request.near.radiusMeters)
-        : [];
+      : request.within
+        ? anchorsWithin(request.within)
+        : request.near
+          ? anchorsAround(request.near.center, request.near.radiusMeters)
+          : [];
 
     const results: PlaceInfo[] = [];
     for (const anchor of anchors) {
@@ -131,10 +149,30 @@ class DemoPlacesProvider implements PlacesProvider {
         results.push(place);
       }
     }
-    return results
-      .sort((x, y) => (y.rating ?? 0) * Math.log10((y.userRatingCount ?? 0) + 10) - (x.rating ?? 0) * Math.log10((x.userRatingCount ?? 0) + 10))
-      .slice(0, Math.min(20, request.maxResults ?? 20));
+    const inside = request.within ? results.filter((p) => isWithin(p.location, request.within!)) : results;
+    return inside.sort(
+      (x, y) => (y.rating ?? 0) * Math.log10((y.userRatingCount ?? 0) + 10) - (x.rating ?? 0) * Math.log10((x.userRatingCount ?? 0) + 10),
+    );
   }
+}
+
+function isWithin(p: LatLng, b: Bounds): boolean {
+  return p.lat >= b.south && p.lat <= b.north && p.lng >= b.west && p.lng <= b.east;
+}
+
+/** A grid of anchors covering a rectangle (denser grids for bigger areas, capped). */
+function anchorsWithin(b: Bounds): LatLng[] {
+  const widthKm = haversineMeters({ lat: (b.south + b.north) / 2, lng: b.west }, { lat: (b.south + b.north) / 2, lng: b.east }) / 1000;
+  const heightKm = haversineMeters({ lat: b.south, lng: b.west }, { lat: b.north, lng: b.west }) / 1000;
+  const cols = Math.max(2, Math.min(5, Math.round(widthKm / 12)));
+  const rows = Math.max(2, Math.min(5, Math.round(heightKm / 12)));
+  const anchors: LatLng[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      anchors.push({ lat: b.south + ((r + 0.5) / rows) * (b.north - b.south), lng: b.west + ((c + 0.5) / cols) * (b.east - b.west) });
+    }
+  }
+  return anchors;
 }
 
 function anchorsAlongPath(path: LatLng[]): LatLng[] {

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
-import type { Trip, TripRequest } from '@journey/shared';
+import type { SwapSearchResult, Trip, TripRequest } from '@journey/shared';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import { MemoryTripRepository } from '../src/db/tripRepository.js';
@@ -92,7 +92,7 @@ describe('API', () => {
     const trip = await createTrip();
     const day = trip.days[0]!;
     const lodging = day.stops[day.stops.length - 1]!;
-    const alternatives = (await app.inject(`/api/trips/${trip.id}/days/0/stops/${lodging.id}/alternatives`)).json<{ place: Trip['request']['origin'] }[]>();
+    const { results: alternatives } = (await app.inject(`/api/trips/${trip.id}/days/0/stops/${lodging.id}/alternatives`)).json<SwapSearchResult>();
     expect(alternatives.length).toBeGreaterThan(0);
     const stops = [...day.stops.slice(0, -1), { ...lodging, id: undefined, place: alternatives[0]!.place }];
     const res = await app.inject({ method: 'PUT', url: `/api/trips/${trip.id}/days/0`, payload: { stops } });

@@ -131,6 +131,14 @@ export const TUNING = {
     detourErrorThresholdMinutes: 5,
   },
 
+  /** Swap search: the area searched around a stop, and how big a searched map area may get. */
+  swap: {
+    /** Half-width of the starting search area, by kind of stop. */
+    areaRadiusKm: { activity: 25, meal: 12, lodging: 30 },
+    maxAreaSpanDegrees: { lat: 8, lng: 12 },
+    resultsPerPage: 20,
+  },
+
   /** Greedy passes over the activity list (each pass can add one more of each activity). */
   maxFillPasses: 3,
 } as const;

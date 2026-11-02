@@ -106,6 +106,7 @@ export async function finalizeDay(args: FinalizeDayArgs): Promise<TripDay> {
     if (item.activityLabel) stop.activityLabel = item.activityLabel;
     if (item.emoji) stop.emoji = item.emoji;
     if (item.mealType) stop.mealType = item.mealType;
+    if (item.lodgingType) stop.lodgingType = item.lodgingType;
     if (item.pinnedStart) stop.pinnedStart = item.pinnedStart;
     if (item.outdoor !== undefined) stop.outdoor = item.outdoor;
     if (item.notes) stop.notes = item.notes;

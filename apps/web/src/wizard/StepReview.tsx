@@ -36,7 +36,7 @@ export function StepReview({ draft, onNameChange }: { draft: TripDraft; onNameCh
           <ol className="review__activities">
             {draft.activities.map((a) => (
               <li key={a.id}>
-                {a.emoji} {a.label} · ~{formatMinutes(a.durationMinutes)} · {FREQUENCY_SUMMARY[a.frequency]}
+                {a.label} · ~{formatMinutes(a.durationMinutes)} · {FREQUENCY_SUMMARY[a.frequency]}
               </li>
             ))}
           </ol>
@@ -47,7 +47,7 @@ export function StepReview({ draft, onNameChange }: { draft: TripDraft; onNameCh
         <dt>Meals</dt>
         <dd>{meals.length ? `Stop for ${meals.join(', ')}` : 'No meal stops'}</dd>
         <dt>Sleeping at</dt>
-        <dd>{draft.lodgingType ? `${LODGING_TYPES[draft.lodgingType].emoji} ${LODGING_TYPES[draft.lodgingType].label}` : '—'}</dd>
+        <dd>{draft.lodgingType ? LODGING_TYPES[draft.lodgingType].label : '—'}</dd>
         <dt>Pace</dt>
         <dd>
           {PACES[p.pace].label} · up to {p.maxDrivingHoursPerDay}h driving/day ·{' '}

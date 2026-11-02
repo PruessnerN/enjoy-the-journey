@@ -60,7 +60,8 @@ Typical usage per generated plan:
 | 4 days, 4 activities | ~50 | ~9 |
 
 Editing a day costs one route call. "Fresh ideas" / "Re-plan day" cost about one day's worth of
-searches. Identical requests are reused for `CACHE_TTL_MINUTES` (default 6 hours), and
+searches. In the swap window, each category change, "Search this area" and "Show more results" is
+one place search (repeats are cached). Identical requests are reused for `CACHE_TTL_MINUTES` (default 6 hours), and
 `PLANS_PER_HOUR_PER_IP` limits how often plans can be generated. Set a budget alert and quotas in
 Google Cloud, and check [current pricing](https://mapsplatform.google.com/pricing/).
 
@@ -78,6 +79,7 @@ All settings are environment variables (see [.env.example](.env.example)):
 | `POSTGRES_PASSWORD` | – | Database password (internal to the compose network). |
 | `CACHE_TTL_MINUTES` | `360` | Reuse identical Google responses for this long (`0` disables). |
 | `PLANS_PER_HOUR_PER_IP` | `60` | Rate limit for plan / re-plan / regenerate requests. |
+| `SEARCHES_PER_HOUR_PER_IP` | `300` | Rate limit for swap and add-a-stop searches (one Google call each). |
 | `LOG_LEVEL` | `info` | API log level. |
 
 > The app has no user accounts. If you expose it to the internet, put it behind authentication
@@ -98,14 +100,19 @@ there". You can also cap **activities per day** (meals don't count). You can als
 - **Timeline** for each day: departure, every drive (with built-in fuel/rest breaks), arrival and
   departure for each stop, free-time gaps, sunset, and the night's check-in. Times show in each
   stop's local time zone, and time-zone changes are labelled.
-- **Swap** a stop for top-rated alternatives nearby, or search for something specific.
+- **Swap** a stop: a list plus a zoomable map of the area around it, with numbered pins for every
+  result. Pick a category (it starts on what the stop is now) and optionally narrow it down
+  ("Thai", "9-hole"). Activities can switch to any activity (disc golf → kayaking), meals to any
+  kind of food (Pizza, BBQ, Quick bite…), lodging to any lodging type (campground → hotel), but a
+  meal can't become an activity and an activity can't become lodging. Pan or zoom the map and hit
+  **Search this area** to look elsewhere; **Show more results** pages through up to 60.
 - **Add a stop** anywhere: pick from your activities and meals, search freely ("pie", "hot springs"),
   or look up an exact place you found on Google ("I know where I want to go").
 - **Edit** a stop's duration, set a *start no earlier than* time (reservations, tee times), add notes.
 - **Reorder, remove, lock.** Locked stops survive regeneration. Anything you edit is locked
   automatically.
 - **Change the departure time** for any day.
-- **✨ Fresh ideas** replaces a day's unlocked stops with different suggestions. **↻ Re-plan day**
+- **Fresh ideas** replaces a day's unlocked stops with different suggestions. **Re-plan day**
   rebuilds the day around your locked stops.
 - **Trip settings** changes any input (route, activities, lodging, pace) and re-plans the whole trip.
 - Warnings explain problems in plain language ("Likely closed at 6:10 PM", "You'd be driving after

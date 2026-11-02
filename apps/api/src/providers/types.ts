@@ -1,4 +1,4 @@
-import type { DataSource, LatLng, PlaceInfo, PlaceSuggestion } from '@journey/shared';
+import type { Bounds, DataSource, LatLng, PlaceInfo, PlaceSuggestion } from '@journey/shared';
 
 export interface Waypoint {
   location: LatLng;
@@ -36,7 +36,15 @@ export interface TextSearchRequest {
   alongRoutePolyline?: string;
   /** Bias results to a circle. Ignored when `alongRoutePolyline` is set. */
   near?: { center: LatLng; radiusMeters: number };
+  /** Only return places inside this rectangle (e.g. the visible map). Takes precedence over `near`. */
+  within?: Bounds;
   maxResults?: number;
+}
+
+export interface SearchPage {
+  places: PlaceInfo[];
+  /** Pass back (with the identical request) to get the next page of results. */
+  nextPageToken?: string;
 }
 
 export interface AutocompleteOptions {
@@ -48,6 +56,7 @@ export interface PlacesProvider {
   autocomplete(input: string, options?: AutocompleteOptions): Promise<PlaceSuggestion[]>;
   getPlace(placeId: string, sessionToken?: string): Promise<PlaceInfo>;
   searchText(request: TextSearchRequest): Promise<PlaceInfo[]>;
+  searchPage(request: TextSearchRequest, pageToken?: string): Promise<SearchPage>;
 }
 
 export interface DataProvider {

@@ -11,6 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
     "@journey/shared": "*",
     "@tanstack/react-query": "^5.105.1",
     "@types/react": "^19.3.0",

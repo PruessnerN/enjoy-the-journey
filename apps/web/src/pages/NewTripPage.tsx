@@ -138,12 +138,12 @@ export function NewTripPage() {
 
           <div className="wizard__nav">
             <button type="button" className="button button--ghost" disabled={stepIndex === 0} onClick={() => setStepIndex((i) => Math.max(0, i - 1))}>
-              ← Back
+              Back
             </button>
             {step === 'activities' && !canContinue && <span className="muted">Pick at least one activity</span>}
             {step === 'lodging' && !canContinue && <span className="muted">Choose where you'd like to sleep</span>}
             <button type="submit" className="button button--primary button--large" disabled={!canContinue || create.isPending}>
-              {step === 'review' ? 'Plan my journey ✨' : 'Continue →'}
+              {step === 'review' ? 'Plan my journey' : 'Continue'}
             </button>
           </div>
         </form>

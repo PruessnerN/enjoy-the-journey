@@ -2,7 +2,7 @@ export type Theme = 'light' | 'dark';
 
 export const THEME_STORAGE_KEY = 'ejt.theme';
 
-const THEME_COLORS: Record<Theme, string> = { light: '#0f4c5c', dark: '#121a1e' };
+const THEME_COLORS: Record<Theme, string> = { light: '#2f5233', dark: '#151a16' };
 
 /** An explicit user choice wins; otherwise follow the operating system. */
 export function resolveTheme(stored: string | null, systemPrefersDark: boolean): Theme {

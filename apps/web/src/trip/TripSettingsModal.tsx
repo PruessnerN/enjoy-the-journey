@@ -34,7 +34,7 @@ export function TripSettingsModal({ trip, onClose }: { trip: Trip; onClose: () =
     <Modal
       title="Trip settings"
       onClose={onClose}
-      wide
+      size="wide"
       footer={
         <>
           {!request.ok && <span className="field__error">{request.message}</span>}
@@ -53,7 +53,7 @@ export function TripSettingsModal({ trip, onClose }: { trip: Trip; onClose: () =
       }
     >
       {hasEdits && (
-        <p className="issue issue--warning">⚠️ Re-planning builds a fresh itinerary and replaces your manual edits and locked stops.</p>
+        <p className="issue issue--warning">Re-planning builds a fresh itinerary and replaces your manual edits and locked stops.</p>
       )}
       <div className="tabs" role="tablist">
         {TABS.map((t) => (

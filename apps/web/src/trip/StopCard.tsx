@@ -1,6 +1,7 @@
 import { formatDistance, formatDuration, formatMinutes, type Stop, type Trip, type TripDay } from '@journey/shared';
 import { STOP_ICONS, stopIconKind } from './stopIcons';
 import { clocksDiffer, formatTime, zoneAbbreviation } from '../lib/time';
+import { Icon } from '../components/Icon';
 import { IssueList, Rating } from '../components/ui';
 
 export const KIND_LABEL: Record<Stop['kind'], string> = {
@@ -51,10 +52,10 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
             <span className="stop__eyebrow">
               {stop.kind === 'lodging' ? `Check in · ${label}` : label}
               {!isEnd && ` · ${formatMinutes(stop.durationMinutes)}`}
-              {stop.pinnedStart && ' · ⏰ fixed time'}
+              {stop.pinnedStart && ' · Fixed time'}
               {stop.locked && (
                 <span className="lock-badge" title="Locked: kept when you regenerate this day">
-                  🔒
+                  <Icon name="lock" size={12} /> Locked
                 </span>
               )}
             </span>
@@ -76,18 +77,18 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
           {stop.kind !== 'destination' && (
             <div className="stop__actions" onClick={(e) => e.stopPropagation()}>
               <button type="button" className="button button--small" onClick={onSwap} disabled={disabled} title="See alternatives nearby">
-                ⇄ Swap
+                <Icon name="swap" /> Swap
               </button>
               {!isEnd && (
                 <>
                   <button type="button" className="icon-button" onClick={onEdit} disabled={disabled} aria-label="Edit stop" title="Edit time, duration & notes">
-                    ✎
+                    <Icon name="edit" />
                   </button>
                   <button type="button" className="icon-button" onClick={() => onMove(-1)} disabled={disabled || index === 0} aria-label="Move earlier" title="Move earlier">
-                    ↑
+                    <Icon name="up" />
                   </button>
                   <button type="button" className="icon-button" onClick={() => onMove(1)} disabled={disabled || index >= lastMovable} aria-label="Move later" title="Move later">
-                    ↓
+                    <Icon name="down" />
                   </button>
                   <button
                     type="button"
@@ -98,22 +99,22 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
                     aria-label={stop.locked ? 'Unlock stop' : 'Lock stop'}
                     title={stop.locked ? 'Unlock (may be replaced when regenerating)' : 'Lock (keep when regenerating)'}
                   >
-                    {stop.locked ? '🔒' : '🔓'}
+                    <Icon name={stop.locked ? 'lock' : 'unlock'} />
                   </button>
                   <button type="button" className="icon-button icon-button--danger" onClick={onRemove} disabled={disabled} aria-label="Remove stop" title="Remove">
-                    🗑
+                    <Icon name="trash" />
                   </button>
                 </>
               )}
             </div>
           )}
         </header>
-        {stop.notes && <p className="stop__notes">📝 {stop.notes}</p>}
+        {stop.notes && <p className="stop__notes">{stop.notes}</p>}
         {(stop.links?.length || stop.place.websiteUri) && (
           <div className="stop__links" onClick={(e) => e.stopPropagation()}>
             {(stop.links ?? (stop.place.websiteUri ? [{ label: 'Website', url: stop.place.websiteUri }] : [])).map((l) => (
               <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="link-pill">
-                {l.label} ↗
+                {l.label} <Icon name="external" size={12} />
               </a>
             ))}
           </div>
@@ -133,11 +134,11 @@ export function DriveSegment({ day, index }: { day: TripDay; index: number }) {
       <div className="drive__line" aria-hidden />
       <div className="drive__info">
         <span>
-          🚗 {formatDuration(leg.durationSeconds)} · {formatDistance(leg.distanceMeters)}
+          Drive {formatDuration(leg.durationSeconds)} · {formatDistance(leg.distanceMeters)}
           {leg.breakMinutes > 0 && <span className="muted"> · includes {leg.breakMinutes} min of breaks</span>}
           {leg.estimated && <span className="muted"> · estimated</span>}
         </span>
-        {stop.waitMinutes >= 10 && <span className="drive__wait">⏳ {formatMinutes(stop.waitMinutes)} of free time before the next stop</span>}
+        {stop.waitMinutes >= 10 && <span className="drive__wait">{formatMinutes(stop.waitMinutes)} of free time before the next stop</span>}
       </div>
     </li>
   );

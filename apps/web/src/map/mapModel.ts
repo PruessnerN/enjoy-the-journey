@@ -1,4 +1,4 @@
-import { decodePolyline, type LatLng, type Trip } from '@journey/shared';
+import { decodePolyline, type Bounds, type LatLng, type Trip, type TripDay } from '@journey/shared';
 import { STOP_ICONS, dayStartIconKind, stopIcon } from '../trip/stopIcons';
 import { formatTime } from '../lib/time';
 import type { Theme } from '../lib/theme';
@@ -37,12 +37,7 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
 
   for (const day of trip.days) {
     const color = dayColor(day.index, theme);
-    day.legs.forEach((leg, i) => {
-      const from = i === 0 ? day.start.location : day.stops[i - 1]!.place.location;
-      const to = day.stops[i]!.place.location;
-      const points = leg.polyline ? decodePolyline(leg.polyline) : [from, to];
-      paths.push({ key: `${day.index}-${i}`, dayIndex: day.index, color, points: points.length > 1 ? points : [from, to] });
-    });
+    dayRoutePaths(day).forEach((points, i) => paths.push({ key: `${day.index}-${i}`, dayIndex: day.index, color, points }));
   }
 
   if (trip.days[0]) {
@@ -110,4 +105,24 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
       west: Math.min(...lngs),
     },
   };
+}
+
+/** The day's drive as one path per leg (straight lines where a leg has no geometry). */
+export function dayRoutePaths(day: TripDay): LatLng[][] {
+  return day.legs.map((leg, i) => {
+    const from = i === 0 ? day.start.location : day.stops[i - 1]!.place.location;
+    const to = day.stops[i]!.place.location;
+    const points = leg.polyline ? decodePolyline(leg.polyline) : [];
+    return points.length > 1 ? points : [from, to];
+  });
+}
+
+/** True when the visible map area has moved or zoomed noticeably compared to `baseline`. */
+export function viewMoved(view: Bounds, baseline: Bounds): boolean {
+  const latSpan = baseline.north - baseline.south;
+  const lngSpan = baseline.east - baseline.west;
+  const dLat = Math.abs((view.north + view.south) / 2 - (baseline.north + baseline.south) / 2);
+  const dLng = Math.abs((view.east + view.west) / 2 - (baseline.east + baseline.west) / 2);
+  const zoom = (view.north - view.south) / latSpan;
+  return dLat > latSpan * 0.12 || dLng > lngSpan * 0.12 || zoom < 0.8 || zoom > 1.25;
 }

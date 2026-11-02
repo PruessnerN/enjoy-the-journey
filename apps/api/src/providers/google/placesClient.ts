@@ -1,5 +1,5 @@
 import type { OpeningPeriod, PlaceInfo, PlaceSuggestion } from '@journey/shared';
-import { ProviderError, type AutocompleteOptions, type PlacesProvider, type TextSearchRequest } from '../types.js';
+import { ProviderError, type AutocompleteOptions, type PlacesProvider, type SearchPage, type TextSearchRequest } from '../types.js';
 import { googleRequest } from './http.js';
 
 const BASE_URL = 'https://places.googleapis.com/v1';
@@ -105,6 +105,10 @@ export class GooglePlacesProvider implements PlacesProvider {
   }
 
   async searchText(request: TextSearchRequest): Promise<PlaceInfo[]> {
+    return (await this.searchPage(request)).places;
+  }
+
+  async searchPage(request: TextSearchRequest, pageToken?: string): Promise<SearchPage> {
     const body: Record<string, unknown> = {
       textQuery: request.query,
       pageSize: Math.min(20, request.maxResults ?? 20),
@@ -113,6 +117,13 @@ export class GooglePlacesProvider implements PlacesProvider {
     if (request.includedType) body.includedType = request.includedType;
     if (request.alongRoutePolyline) {
       body.searchAlongRouteParameters = { polyline: { encodedPolyline: request.alongRoutePolyline } };
+    } else if (request.within) {
+      // Text Search's locationRestriction returns far too little for queries like "disc golf course"
+      // (often just one place), so bias to the rectangle and keep only the places inside it below.
+      const b = request.within;
+      body.locationBias = {
+        rectangle: { low: { latitude: b.south, longitude: b.west }, high: { latitude: b.north, longitude: b.east } },
+      };
     } else if (request.near) {
       body.locationBias = {
         circle: {
@@ -122,15 +133,17 @@ export class GooglePlacesProvider implements PlacesProvider {
       };
     }
 
+    // A page token is only valid with the exact same request that produced it.
+    if (pageToken) body.pageToken = pageToken;
     const run = (payload: Record<string, unknown>) =>
-      googleRequest<{ places?: GooglePlace[] }>('Places API', `${BASE_URL}/places:searchText`, {
+      googleRequest<{ places?: GooglePlace[]; nextPageToken?: string }>('Places API', `${BASE_URL}/places:searchText`, {
         method: 'POST',
         apiKey: this.apiKey,
-        fieldMask: PLACE_FIELDS.map((f) => `places.${f}`).join(','),
+        fieldMask: [...PLACE_FIELDS.map((f) => `places.${f}`), 'nextPageToken'].join(','),
         body: payload,
       });
 
-    let res: { places?: GooglePlace[] };
+    let res: { places?: GooglePlace[]; nextPageToken?: string };
     try {
       res = await run(body);
     } catch (error) {
@@ -143,10 +156,17 @@ export class GooglePlacesProvider implements PlacesProvider {
       }
     }
 
-    return (res.places ?? [])
+    const all = (res.places ?? [])
       .filter((p) => !p.businessStatus || p.businessStatus === 'OPERATIONAL')
       .map(toPlaceInfo)
       .filter((p): p is PlaceInfo => p !== null);
+    if (!request.within) return { places: all, ...(res.nextPageToken ? { nextPageToken: res.nextPageToken } : {}) };
+
+    const b = request.within;
+    const places = all.filter((p) => p.location.lat >= b.south && p.location.lat <= b.north && p.location.lng >= b.west && p.location.lng <= b.east);
+    // Once results spill outside the area, later pages are almost all outside it: don't pay for them.
+    const worthMore = res.nextPageToken && places.length * 2 >= all.length;
+    return { places, ...(worthMore ? { nextPageToken: res.nextPageToken } : {}) };
   }
 }
 

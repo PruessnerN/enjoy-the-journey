@@ -11,6 +11,7 @@ import {
   type ActivityRequest,
   type TripPreferences,
 } from '@journey/shared';
+import { Icon } from '../components/Icon';
 import { formatClock } from '../lib/time';
 
 interface StepActivitiesProps {
@@ -112,7 +113,7 @@ export function StepActivities({
                 title={a.description}
                 onClick={() => toggle(a.id)}
               >
-                <span aria-hidden>{a.emoji}</span> {a.label}
+                {a.label}
               </button>
             ))}
           </div>
@@ -189,13 +190,13 @@ export function StepActivities({
                   onDrop={(e) => e.preventDefault()}
                 >
                   <span className="selected-activity__handle" aria-hidden title="Drag to reorder">
-                    ⠿
+                    <Icon name="drag" />
                   </span>
                   <span className="selected-activity__rank" aria-label={`Rank ${i + 1}`}>
                     {i + 1}
                   </span>
                   <span className="selected-activity__name">
-                    <span aria-hidden>{a.emoji ?? '📍'}</span> {a.label}
+                    {a.label}
                   </span>
                   <select
                     className="input input--auto"
@@ -232,7 +233,7 @@ export function StepActivities({
                       disabled={i === 0}
                       onClick={() => onChange(moveItem(activities, i, i - 1))}
                     >
-                      ↑
+                      <Icon name="up" />
                     </button>
                     <button
                       type="button"
@@ -241,11 +242,11 @@ export function StepActivities({
                       disabled={i === activities.length - 1}
                       onClick={() => onChange(moveItem(activities, i, i + 1))}
                     >
-                      ↓
+                      <Icon name="down" />
                     </button>
                   </span>
                   <button type="button" className="icon-button" aria-label={`Remove ${a.label}`} onClick={() => toggle(a.id)}>
-                    ✕
+                    <Icon name="close" />
                   </button>
                 </li>
               );
@@ -279,9 +280,6 @@ export function StepActivities({
             return (
               <label key={m} className={`toggle-card${meals[m] ? ' is-selected' : ''}`}>
                 <input type="checkbox" checked={meals[m]} onChange={(e) => onMealsChange({ ...meals, [m]: e.target.checked })} />
-                <span className="toggle-card__emoji" aria-hidden>
-                  {meal.emoji}
-                </span>
                 <span>
                   <strong>{meal.label}</strong>
                   <small>

@@ -4,6 +4,7 @@ import {
   dayUpdateSchema,
   regenerateDaySchema,
   replanSchema,
+  swapSearchQuerySchema,
   tripPatchSchema,
   tripRequestSchema,
 } from '@journey/shared';
@@ -18,9 +19,15 @@ const searchQuery = z.object({
   lng: z.coerce.number().min(-180).max(180).optional(),
 });
 
-export function registerTripRoutes(app: FastifyInstance, trips: TripService, plansPerHour: number): void {
-  // Planning calls many upstream APIs, so it gets a stricter limit than reads.
-  const planLimit = { config: { rateLimit: { max: plansPerHour, timeWindow: '1 hour' } } };
+export interface TripRouteLimits {
+  plansPerHour: number;
+  searchesPerHour: number;
+}
+
+export function registerTripRoutes(app: FastifyInstance, trips: TripService, limits: TripRouteLimits): void {
+  // Planning and place searches call paid upstream APIs, so they get stricter limits than reads.
+  const planLimit = { config: { rateLimit: { max: limits.plansPerHour, timeWindow: '1 hour' } } };
+  const searchLimit = { config: { rateLimit: { max: limits.searchesPerHour, timeWindow: '1 hour' } } };
 
   app.get('/api/trips', async () => trips.list());
 
@@ -65,12 +72,12 @@ export function registerTripRoutes(app: FastifyInstance, trips: TripService, pla
     return trips.regenerateDay(id, index, freshIdeas ?? false);
   });
 
-  app.get('/api/trips/:id/days/:index/stops/:stopId/alternatives', async (request) => {
+  app.get('/api/trips/:id/days/:index/stops/:stopId/alternatives', searchLimit, async (request) => {
     const { id, index, stopId } = stopParams.parse(request.params);
-    return trips.alternatives(id, index, stopId);
+    return trips.swapSearch(id, index, stopId, swapSearchQuerySchema.parse(request.query));
   });
 
-  app.get('/api/trips/:id/days/:index/search', async (request) => {
+  app.get('/api/trips/:id/days/:index/search', searchLimit, async (request) => {
     const { id, index } = dayParams.parse(request.params);
     const { q, lat, lng } = searchQuery.parse(request.query);
     const near = lat !== undefined && lng !== undefined ? { lat, lng } : undefined;

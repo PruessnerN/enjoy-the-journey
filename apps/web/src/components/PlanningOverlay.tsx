@@ -21,8 +21,8 @@ export function PlanningOverlay({ title = 'Planning your journey' }: { title?: s
   return (
     <div className="planning-overlay" role="status" aria-live="polite">
       <div className="planning-overlay__card">
-        <div className="road-animation" aria-hidden>
-          <span className="road-animation__car">🚙</span>
+        <div className="route-progress" aria-hidden>
+          <span className="route-progress__dot" />
         </div>
         <h2>{title}</h2>
         <p>{MESSAGES[index]}</p>

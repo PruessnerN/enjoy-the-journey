@@ -1,4 +1,4 @@
-import type { ActivityFrequency, LatLng, Link, MealType, PlaceInfo, StopInput, TripRequest } from './schemas.js';
+import type { ActivityFrequency, Bounds, LatLng, Link, MealType, PlaceInfo, StopInput, TripRequest } from './schemas.js';
 
 export type DataSource = 'google' | 'demo';
 
@@ -120,6 +120,14 @@ export interface PlaceCandidate {
   detourMinutes?: number;
   distanceFromRouteMeters?: number;
   score?: number;
+}
+
+export interface SwapSearchResult {
+  category: string;
+  /** The area searched; results all lie inside it. */
+  area: Bounds;
+  results: PlaceCandidate[];
+  nextPageToken?: string;
 }
 
 export interface ActivityDefinition {

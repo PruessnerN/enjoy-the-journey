@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { formatDistance, formatDuration, type Stop, type StopInput, type Trip, type TripDay } from '@journey/shared';
 import { useRegenerateDay, useUpdateDay } from '../api/hooks';
+import { Icon } from '../components/Icon';
 import { ErrorNote, IssueList, Spinner } from '../components/ui';
 import { applyDayEdit, toStopInput, type DayEdit } from '../lib/dayEdits';
 import { clocksDiffer, formatDate, formatTime, zoneAbbreviation } from '../lib/time';
@@ -46,15 +47,19 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
           </p>
         </div>
         <div className="day__stats">
-          <span>🚗 {formatDuration(day.driveSeconds)}</span>
-          <span>🛣️ {formatDistance(day.distanceMeters)}</span>
           <span>
-            🏁 Arrive {formatTime(day.arrival, end.timeZone)}
+            <small>Driving</small> {formatDuration(day.driveSeconds)}
+          </span>
+          <span>
+            <small>Distance</small> {formatDistance(day.distanceMeters)}
+          </span>
+          <span>
+            <small>Arrive</small> {formatTime(day.arrival, end.timeZone)}
             {zoneNote}
           </span>
           {day.sunset && (
             <span>
-              🌅 Sunset {formatTime(day.sunset, end.timeZone)}
+              <small>Sunset</small> {formatTime(day.sunset, end.timeZone)}
               {zoneNote}
             </span>
           )}
@@ -83,7 +88,7 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
             onClick={() => regenerate.mutate({ index: day.index, freshIdeas: true })}
             title="Replace unlocked stops with different ideas"
           >
-            ✨ Fresh ideas
+            <Icon name="shuffle" /> Fresh ideas
           </button>
           <button
             type="button"
@@ -92,7 +97,7 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
             onClick={() => regenerate.mutate({ index: day.index, freshIdeas: false })}
             title="Re-plan this day around your locked stops"
           >
-            ↻ Re-plan day
+            <Icon name="refresh" /> Re-plan day
           </button>
         </div>
         <IssueList issues={day.issues} />

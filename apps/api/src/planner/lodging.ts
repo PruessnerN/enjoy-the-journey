@@ -159,6 +159,7 @@ function lodgingItem(
   const def = LODGING_TYPES[request.lodgingType];
   return {
     kind: 'lodging',
+    lodgingType: request.lodgingType,
     place,
     durationMinutes: 0,
     seconds,

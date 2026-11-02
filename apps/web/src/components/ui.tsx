@@ -19,15 +19,13 @@ export function Rating({ place }: { place: PlaceInfo }) {
   );
 }
 
-const ICONS: Record<Issue['severity'], string> = { warning: '⚠️', info: 'ℹ️' };
-
 export function IssueList({ issues, compact }: { issues: Issue[]; compact?: boolean }) {
   if (issues.length === 0) return null;
   return (
     <ul className={`issues${compact ? ' issues--compact' : ''}`}>
       {issues.map((issue, i) => (
         <li key={`${issue.code}-${i}`} className={`issue issue--${issue.severity}`}>
-          <span aria-hidden>{ICONS[issue.severity]}</span> {issue.message}
+          {issue.message}
         </li>
       ))}
     </ul>
@@ -47,7 +45,7 @@ export function ErrorNote({ error, onRetry }: { error: unknown; onRetry?: () => 
   const message = error instanceof Error ? error.message : 'Something went wrong.';
   return (
     <div className="error-note" role="alert">
-      <span>⚠️ {message}</span>
+      <span>{message}</span>
       {onRetry && (
         <button type="button" className="button button--small" onClick={onRetry}>
           Try again

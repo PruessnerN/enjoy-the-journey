@@ -4,7 +4,7 @@ import { formatDuration, type Trip } from '@journey/shared';
 import { api } from '../api/client';
 import { useDeleteTrip, useRenameTrip } from '../api/hooks';
 import { formatDate } from '../lib/time';
-import { STOP_ICONS } from './stopIcons';
+import { Icon } from '../components/Icon';
 
 export function TripHeader({ trip, onOpenSettings }: { trip: Trip; onOpenSettings: () => void }) {
   const rename = useRenameTrip(trip.id);
@@ -45,7 +45,7 @@ export function TripHeader({ trip, onOpenSettings }: { trip: Trip; onOpenSetting
         ) : (
           <h1>
             <button type="button" className="title-button" onClick={() => setEditing(true)} title="Rename trip">
-              {trip.name} <span aria-hidden>✎</span>
+              {trip.name} <Icon name="edit" size={18} />
             </button>
           </h1>
         )}
@@ -58,25 +58,29 @@ export function TripHeader({ trip, onOpenSettings }: { trip: Trip; onOpenSetting
         </p>
         <ul className="stat-pills">
           <li>
-            🗓️ {s.days} day{s.days === 1 ? '' : 's'}
+            <small>Days</small> {s.days}
           </li>
           <li title={`Driving straight through would take ${formatDuration(s.directDriveSeconds)}`}>
-            🚗 {formatDuration(s.totalDriveSeconds)} driving <span className="muted">({formatDuration(s.directDriveSeconds)} direct)</span>
+            <small>Driving</small> {formatDuration(s.totalDriveSeconds)} <span className="muted">/ {formatDuration(s.directDriveSeconds)} direct</span>
           </li>
-          <li>{STOP_ICONS.activity.emoji} {s.activityCount} activities</li>
-          <li>{STOP_ICONS.meal.emoji} {s.mealCount} meals</li>
+          <li>
+            <small>Activities</small> {s.activityCount}
+          </li>
+          <li>
+            <small>Meals</small> {s.mealCount}
+          </li>
           {trip.dataSource === 'demo' && <li className="pill--demo">Demo data</li>}
         </ul>
       </div>
       <div className="trip-header__actions">
         <button type="button" className="button" onClick={onOpenSettings}>
-          ⚙️ Trip settings
+          <Icon name="settings" /> Trip settings
         </button>
         <a className="button" href={api.calendarUrl(trip.id)} download>
-          📅 Add to calendar
+          <Icon name="calendar" /> Add to calendar
         </a>
         <button type="button" className="button button--ghost" onClick={() => window.print()}>
-          🖨️ Print
+          <Icon name="print" /> Print
         </button>
         <button
           type="button"

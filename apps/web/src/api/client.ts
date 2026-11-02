@@ -1,15 +1,25 @@
 import type {
   ApiErrorBody,
   AppConfig,
+  Bounds,
   DayUpdate,
   LatLng,
   PlaceCandidate,
   PlaceInfo,
   PlaceSuggestion,
+  SwapSearchResult,
   Trip,
   TripListItem,
   TripRequest,
 } from '@journey/shared';
+
+export interface SwapSearchParams {
+  category?: string;
+  q?: string;
+  /** Omit to search the default area around the stop. */
+  area?: Bounds;
+  pageToken?: string;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -68,8 +78,18 @@ export const api = {
     request<Trip>(`/trips/${id}/days/${index}`, { method: 'PUT', body: json(body) }),
   regenerateDay: (id: string, index: number, freshIdeas: boolean) =>
     request<Trip>(`/trips/${id}/days/${index}/regenerate`, { method: 'POST', body: json({ freshIdeas }) }),
-  alternatives: (id: string, index: number, stopId: string) =>
-    request<PlaceCandidate[]>(`/trips/${id}/days/${index}/stops/${stopId}/alternatives`),
+  swapSearch: (id: string, index: number, stopId: string, params: SwapSearchParams) =>
+    request<SwapSearchResult>(
+      `/trips/${id}/days/${index}/stops/${stopId}/alternatives?${qs({
+        category: params.category,
+        q: params.q,
+        south: params.area?.south,
+        west: params.area?.west,
+        north: params.area?.north,
+        east: params.area?.east,
+        pageToken: params.pageToken,
+      })}`,
+    ),
   searchDay: (id: string, index: number, q: string, near?: LatLng) =>
     request<PlaceCandidate[]>(`/trips/${id}/days/${index}/search?${qs({ q, lat: near?.lat, lng: near?.lng })}`),
 

@@ -19,13 +19,13 @@ export function TripOverview({ trip, onSelectDay }: { trip: Trip; onSelectDay: (
                   Day {day.index + 1}
                 </span>
                 <strong>{formatDate(day.date)}</strong>
-                {warnings > 0 && <span className="overview__warn">⚠️ {warnings}</span>}
+                {warnings > 0 && <span className="overview__warn">{warnings} warning{warnings === 1 ? '' : 's'}</span>}
               </div>
               <p>
                 {day.start.name} → <strong>{end.place.name}</strong>
               </p>
               <p className="muted">
-                {formatTime(day.departure, day.timeZone)} – {formatTime(day.arrival, end.timeZone)} · 🚗 {formatDuration(day.driveSeconds)} ·{' '}
+                {formatTime(day.departure, day.timeZone)} – {formatTime(day.arrival, end.timeZone)} · drive {formatDuration(day.driveSeconds)} ·{' '}
                 {formatDistance(day.distanceMeters)}
               </p>
               <div className="overview__stops" aria-label="Stops">

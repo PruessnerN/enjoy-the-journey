@@ -4,6 +4,9 @@ import { applyDayEdit } from './dayEdits';
 import { resolveTheme } from './theme';
 import { dayColor } from '../map/colors';
 import { dayStartIconKind, stopIcon, stopIconKind } from '../trip/stopIcons';
+import { swappedStop } from '../trip/swapStop';
+import { viewMoved } from '../map/mapModel';
+import { searchCategoriesFor, type ActivityRequest } from '@journey/shared';
 import { clocksDiffer, formatClock, formatDate, formatTime } from './time';
 
 const stop = (id: string, kind: Stop['kind'] = 'activity'): Stop => ({
@@ -86,5 +89,46 @@ describe('stop icons', () => {
     expect(stopIcon({ kind: 'meal' })).toBe('🍽️');
     expect(new Set((['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIcon({ kind }))).size).toBe(4);
     expect([dayStartIconKind(0), dayStartIconKind(2)]).toEqual(['driving', 'lodging']);
+  });
+});
+
+describe('swapping a stop', () => {
+  const place = { name: 'New place', location: { lat: 1, lng: 1 } };
+  const activityStop = { ...stop('golf'), activityId: 'disc_golf', activityLabel: 'Disc golf', durationMinutes: 180, links: [{ label: 'x', url: 'y' }] };
+  const category = (group: 'activity' | 'meal' | 'lodging', id: string) => searchCategoriesFor(group, [] as ActivityRequest[]).find((c) => c.id === id)!;
+
+  it('keeps the same activity and duration when only the place changes', () => {
+    const next = swappedStop(activityStop, place, category('activity', 'disc_golf'));
+    expect(next).toMatchObject({ kind: 'activity', activityId: 'disc_golf', durationMinutes: 180, locked: true, place });
+    expect(next.links).toBeUndefined();
+  });
+
+  it("takes on a new activity's label and usual duration", () => {
+    expect(swappedStop(activityStop, place, category('activity', 'kayaking'))).toMatchObject({
+      activityId: 'kayaking',
+      activityLabel: 'Kayaking',
+      durationMinutes: 150,
+      outdoor: true,
+    });
+  });
+
+  it('keeps meals as the same meal and turns lodging into the new kind', () => {
+    const lunch = { ...stop('diner', 'meal'), mealType: 'lunch' as const, durationMinutes: 60 };
+    expect(swappedStop(lunch, place, category('meal', 'meal:pizza'))).toMatchObject({ kind: 'meal', mealType: 'lunch', durationMinutes: 60 });
+    const night = { ...stop('camp', 'lodging'), lodgingType: 'campground' as const };
+    expect(swappedStop(night, place, category('lodging', 'lodging:hotel'))).toMatchObject({
+      kind: 'lodging',
+      lodgingType: 'hotel',
+      activityLabel: 'Hotels & resorts',
+    });
+  });
+});
+
+describe('viewMoved', () => {
+  const base = { south: 40, west: -112, north: 41, east: -110 };
+  it('ignores tiny nudges but notices pans and zooms', () => {
+    expect(viewMoved({ south: 40.02, west: -111.98, north: 41.02, east: -109.98 }, base)).toBe(false);
+    expect(viewMoved({ south: 40.5, west: -112, north: 41.5, east: -110 }, base)).toBe(true);
+    expect(viewMoved({ south: 39.5, west: -113, north: 41.5, east: -109 }, base)).toBe(true);
   });
 });

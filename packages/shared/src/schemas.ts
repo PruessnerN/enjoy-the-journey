@@ -23,6 +23,16 @@ export const openingPeriodSchema = z.object({
   close: openingPointSchema.optional(),
 });
 
+/** A lat/lng rectangle, e.g. the visible map area. */
+export const boundsSchema = z
+  .object({
+    south: z.number().min(-90).max(90),
+    west: z.number().min(-180).max(180),
+    north: z.number().min(-90).max(90),
+    east: z.number().min(-180).max(180),
+  })
+  .refine((b) => b.south < b.north && b.west < b.east, { message: 'Invalid map area' });
+
 export const placeInfoSchema = z.object({
   placeId: z.string().max(300).optional(),
   name: z.string().min(1).max(200),
@@ -121,6 +131,8 @@ export const stopInputSchema = z.object({
   activityLabel: z.string().max(80).optional(),
   emoji: z.string().max(16).optional(),
   mealType: mealTypeSchema.optional(),
+  /** Lodging stops: the kind of lodging (it can differ from the trip default after a swap). */
+  lodgingType: lodgingTypeSchema.optional(),
   durationMinutes: z.number().int().min(0).max(1440),
   pinnedStart: timeOfDaySchema.nullable().optional(),
   locked: z.boolean().optional(),
@@ -156,6 +168,21 @@ export const placeSearchQuerySchema = z.object({
   type: z.string().max(64).optional(),
 });
 
+/** Swap search: a category in an area. Without bounds, the area around the stop is used. */
+export const swapSearchQuerySchema = z
+  .object({
+    category: z.string().trim().min(1).max(80).optional(),
+    q: z.string().trim().max(80).optional(),
+    south: z.coerce.number().min(-90).max(90).optional(),
+    west: z.coerce.number().min(-180).max(180).optional(),
+    north: z.coerce.number().min(-90).max(90).optional(),
+    east: z.coerce.number().min(-180).max(180).optional(),
+    pageToken: z.string().max(2000).optional(),
+  })
+  .refine((v) => [v.south, v.west, v.north, v.east].every((x) => x === undefined) || [v.south, v.west, v.north, v.east].every((x) => x !== undefined), {
+    message: 'Provide all of south, west, north and east, or none',
+  });
+
 export const autocompleteQuerySchema = z.object({
   q: z.string().trim().min(1).max(120),
   lat: z.coerce.number().min(-90).max(90).optional(),
@@ -164,6 +191,8 @@ export const autocompleteQuerySchema = z.object({
 });
 
 export type LatLng = z.infer<typeof latLngSchema>;
+export type Bounds = z.infer<typeof boundsSchema>;
+export type SwapSearchQuery = z.infer<typeof swapSearchQuerySchema>;
 export type OpeningPeriod = z.infer<typeof openingPeriodSchema>;
 export type PlaceInfo = z.infer<typeof placeInfoSchema>;
 export type LodgingType = z.infer<typeof lodgingTypeSchema>;
