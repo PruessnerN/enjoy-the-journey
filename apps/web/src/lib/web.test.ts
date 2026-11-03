@@ -6,7 +6,7 @@ import { dayColor } from '../map/colors';
 import { dayStartIconKind, stopIcon, stopIconKind } from '../trip/stopIcons';
 import { swappedStop } from '../trip/swapStop';
 import { viewMoved } from '../map/mapModel';
-import { searchCategoriesFor, type ActivityRequest } from '@journey/shared';
+import { ACTIVITY_CATALOG, activityRequestFromDefinition, searchCategoriesFor, type ActivityRequest } from '@journey/shared';
 import { clocksDiffer, formatClock, formatDate, formatTime } from './time';
 
 const stop = (id: string, kind: Stop['kind'] = 'activity'): Stop => ({
@@ -25,6 +25,15 @@ const stop = (id: string, kind: Stop['kind'] = 'activity'): Stop => ({
 });
 
 const day = { stops: [stop('a'), stop('b'), stop('hotel', 'lodging')] } as TripDay;
+
+describe('activity defaults', () => {
+  it('defaults every catalog selection to once per trip', () => {
+    expect(ACTIVITY_CATALOG.length).toBeGreaterThan(0);
+    for (const definition of ACTIVITY_CATALOG) {
+      expect(activityRequestFromDefinition(definition).frequency).toBe('once');
+    }
+  });
+});
 
 describe('applyDayEdit', () => {
   it('removes stops but never the night’s lodging', () => {

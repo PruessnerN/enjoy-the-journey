@@ -21,8 +21,8 @@ afterAll(async () => {
   await app.close();
 });
 
-async function createTrip(): Promise<Trip> {
-  const res = await app.inject({ method: 'POST', url: '/api/trips', payload: request });
+async function createTrip(payload: TripRequest = request): Promise<Trip> {
+  const res = await app.inject({ method: 'POST', url: '/api/trips', payload });
   expect(res.statusCode).toBe(201);
   return res.json<Trip>();
 }
@@ -102,7 +102,10 @@ describe('API', () => {
   });
 
   it('regenerates a day while keeping locked stops', async () => {
-    const trip = await createTrip();
+    const trip = await createTrip({
+      ...request,
+      activities: request.activities.map((activity) => ({ ...activity, frequency: 'daily' })),
+    });
     const day = trip.days[1]!;
     const keep = day.stops.find((s) => s.kind === 'activity')!;
     const stops = day.stops.map((s) => (s.id === keep.id ? { ...s, locked: true } : s));

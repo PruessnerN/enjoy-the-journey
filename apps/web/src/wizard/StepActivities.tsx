@@ -90,7 +90,7 @@ export function StepActivities({
         query: text,
         durationMinutes: custom.duration,
         minDurationMinutes: Math.max(10, Math.round((custom.duration * 0.6) / 5) * 5),
-        frequency: 'daily',
+        frequency: 'once',
         priority: 'normal',
         outdoor: custom.outdoor,
       },

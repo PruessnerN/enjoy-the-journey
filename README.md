@@ -90,7 +90,8 @@ All settings are environment variables (see [.env.example](.env.example)):
 **Plan:** origin → destination → activities (at least one) → lodging type (required) → schedule &
 pace → review. Activities form a **ranked list** (drag or ↑ ↓ to reorder, most important first).
 When a day can't fit everything, the planner goes down the list in order and picks the best-rated
-spot it can fit for each. Each activity can be *once per trip*, *2–3 times per trip* (about every other
+spot it can fit for each. Built-in and custom activities default to *once per trip*; saved trips keep
+their selected frequencies. Each activity can be *once per trip*, *2–3 times per trip* (about every other
 day, spread across the trip), *once a day* or *up to twice a day*, and has an adjustable "time
 there". You can also cap **activities per day** (meals don't count). You can also type in your own activity
 (e.g. "bookstores").
