@@ -53,7 +53,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 20,
     maxDurationMinutes: 60,
     outdoor: true,
-    defaultFrequency: 'often',
+    defaultFrequency: 'daily',
   },
   {
     id: 'parks',
@@ -93,7 +93,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 90,
     maxDurationMinutes: 180,
     outdoor: true,
-    defaultFrequency: 'once',
+    defaultFrequency: 'daily',
   },
   {
     id: 'swimming',
@@ -120,7 +120,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 90,
     maxDurationMinutes: 360,
     outdoor: true,
-    defaultFrequency: 'few',
+    defaultFrequency: 'daily',
   },
   {
     id: 'kayaking',
@@ -133,7 +133,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 90,
     maxDurationMinutes: 300,
     outdoor: true,
-    defaultFrequency: 'few',
+    defaultFrequency: 'daily',
   },
   {
     id: 'offroading',
@@ -147,7 +147,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 90,
     maxDurationMinutes: 360,
     outdoor: true,
-    defaultFrequency: 'few',
+    defaultFrequency: 'daily',
   },
   {
     id: 'golf',
@@ -161,7 +161,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 150,
     maxDurationMinutes: 300,
     outdoor: true,
-    defaultFrequency: 'once',
+    defaultFrequency: 'daily',
   },
   {
     id: 'coffee',
@@ -286,7 +286,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 25,
     maxDurationMinutes: 60,
     outdoor: true,
-    defaultFrequency: 'often',
+    defaultFrequency: 'daily',
   },
   {
     id: 'zoos',
@@ -300,7 +300,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 90,
     maxDurationMinutes: 240,
     outdoor: true,
-    defaultFrequency: 'once',
+    defaultFrequency: 'daily',
   },
   {
     id: 'mini_golf',
@@ -328,7 +328,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 150,
     maxDurationMinutes: 360,
     outdoor: true,
-    defaultFrequency: 'once',
+    defaultFrequency: 'daily',
   },
   {
     id: 'roadside',
@@ -341,7 +341,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 15,
     maxDurationMinutes: 60,
     outdoor: true,
-    defaultFrequency: 'often',
+    defaultFrequency: 'daily',
   },
   {
     id: 'top_attractions',
@@ -368,7 +368,7 @@ export const ACTIVITY_CATALOG: ActivityDefinition[] = [
     minDurationMinutes: 60,
     maxDurationMinutes: 150,
     outdoor: false,
-    defaultFrequency: 'once',
+    defaultFrequency: 'daily',
   },
   {
     id: 'shopping',

@@ -104,10 +104,9 @@ describe('planTrip (demo data)', () => {
   it('fits "2–3 times this trip" activities in a few times, spread out', async () => {
     const provider = demoProvider();
     const request = await makeRequest(provider, 'Seattle', 'Denver', {
-      activities: activities('fishing', 'kayaking', 'scenic_viewpoint'),
+      activities: activities('fishing', 'kayaking', 'scenic_viewpoint').map((a) => (a.id === 'scenic_viewpoint' ? a : { ...a, frequency: 'few' as const })),
       preferences: { pace: 'relaxed', maxDrivingHoursPerDay: 4 },
     });
-    expect(request.activities.find((a) => a.id === 'fishing')!.frequency).toBe('few');
     const plan = await planTrip(request, provider);
     expect(plan.days.length).toBeGreaterThanOrEqual(5);
     assertTripInvariants(plan, request);
