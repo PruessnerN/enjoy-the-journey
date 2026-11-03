@@ -38,6 +38,8 @@ const f = (rng: Rng) => pick(rng, FEATURE);
 const a = (rng: Rng) => pick(rng, ADJ);
 
 export const DEMO_THEMES: DemoTheme[] = [
+  // Before hiking: "off-road trail" also contains "trail".
+  { match: /off.?road|ohv|overland/i, primaryType: 'off_roading_area', typeLabel: 'Off roading area', name: (r) => `${n(r)} ${f(r)} OHV Area`, maxOffsetKm: 15, density: 0.35 },
   { match: /disc golf/i, primaryType: 'park', typeLabel: 'Disc golf course', name: (r, t) => (r() < 0.5 ? `${n(r)} ${f(r)} Disc Golf Course` : `${t} Disc Golf Park`), maxOffsetKm: 9, density: 0.55 },
   { match: /hiking|trail/i, primaryType: 'hiking_area', typeLabel: 'Hiking area', name: (r) => `${n(r)} ${f(r)} Trailhead`, maxOffsetKm: 14, density: 0.7 },
   { match: /viewpoint|overlook/i, primaryType: 'scenic_spot', typeLabel: 'Scenic spot', name: (r) => `${n(r)} ${f(r)} Overlook`, maxOffsetKm: 5, density: 0.7 },
