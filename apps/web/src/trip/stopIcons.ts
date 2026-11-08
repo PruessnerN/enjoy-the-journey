@@ -10,10 +10,10 @@ export const STOP_ICONS: Record<StopIconKind, { emoji: string; label: string }> 
   meal: { emoji: '🍽️', label: 'Meal' },
 };
 
-/** The destination ends the drive; activities and your own stops share the activity icon. */
+/** Driving ends at the destination or a main event; activities and your own stops share the activity icon. */
 export function stopIconKind(stop: Pick<Stop, 'kind'>): StopIconKind {
   if (stop.kind === 'lodging') return 'lodging';
-  if (stop.kind === 'destination') return 'driving';
+  if (stop.kind === 'destination' || stop.kind === 'event') return 'driving';
   if (stop.kind === 'meal') return 'meal';
   return 'activity';
 }

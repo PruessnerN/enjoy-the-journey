@@ -19,7 +19,8 @@ export type IssueCode =
   | 'no_restaurant_found'
   | 'no_activities_found'
   | 'book_rental'
-  | 'estimated_route';
+  | 'estimated_route'
+  | 'event_timing';
 
 export interface Issue {
   code: IssueCode;
@@ -70,6 +71,8 @@ export interface TripDay {
   /** Sunset at the day's final stop (tonight's lodging or the destination). */
   sunset?: string;
   issues: Issue[];
+  /** Set on free days spent at a main event (no driving planned). */
+  stay?: { eventId: string; name: string };
 }
 
 export interface TripSummary {
@@ -103,6 +106,8 @@ export interface TripListItem {
   updatedAt: string;
   originName: string;
   destinationName: string;
+  mainEventCount: number;
+  roundTrip: boolean;
   departureDate: string;
   days: number;
   totalDriveSeconds: number;

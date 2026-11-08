@@ -4,15 +4,19 @@ import { useCreateTrip } from '../api/hooks';
 import { PlaceAutocomplete } from '../components/PlaceAutocomplete';
 import { PlanningOverlay } from '../components/PlanningOverlay';
 import { ErrorNote } from '../components/ui';
-import { STEPS, isStepComplete, loadDraft, saveDraft, toRequest, type StepId, type TripDraft } from '../wizard/draft';
+import { STEPS, destinationProblem, isStepComplete, loadDraft, saveDraft, toRequest, type StepId, type TripDraft } from '../wizard/draft';
 import { StepActivities } from '../wizard/StepActivities';
+import { StepDestination } from '../wizard/StepDestination';
 import { StepLodging } from '../wizard/StepLodging';
 import { StepReview } from '../wizard/StepReview';
 import { StepSchedule } from '../wizard/StepSchedule';
 
 const COPY: Record<StepId, { title: string; subtitle: string }> = {
   origin: { title: 'Where does the journey begin?', subtitle: 'Your home, a hotel, a city — wherever you start driving.' },
-  destination: { title: 'Where are you headed?', subtitle: "We'll split the drive into days and find the good stuff in between." },
+  destination: {
+    title: 'Where are you headed?',
+    subtitle: "We'll split the drive into days and find the good stuff in between. Building the trip around a few big stops? Add them as main events.",
+  },
   activities: {
     title: 'What do you love doing along the way?',
     subtitle: "Pick as many as you like. We'll find the best-rated spots near your route and fit them into each day.",
@@ -102,13 +106,15 @@ export function NewTripPage() {
             />
           )}
           {step === 'destination' && (
-            <PlaceAutocomplete
-              key="destination"
-              label="Destination"
-              placeholder="Search a city, address or place"
-              value={draft.destination}
-              onChange={(destination) => update({ destination })}
-              bias={draft.origin?.location}
+            <StepDestination
+              origin={draft.origin}
+              destination={draft.destination}
+              onDestinationChange={(destination) => update({ destination })}
+              roundTrip={draft.roundTrip}
+              onRoundTripChange={(roundTrip) => update({ roundTrip })}
+              mainEvents={draft.mainEvents}
+              onMainEventsChange={(change) => setDraft((d) => ({ ...d, mainEvents: change(d.mainEvents) }))}
+              departureDate={draft.departureDate}
               autoFocus
             />
           )}
@@ -140,6 +146,7 @@ export function NewTripPage() {
             <button type="button" className="button button--ghost" disabled={stepIndex === 0} onClick={() => setStepIndex((i) => Math.max(0, i - 1))}>
               Back
             </button>
+            {step === 'destination' && !canContinue && <span className="muted">{destinationProblem(draft)}</span>}
             {step === 'activities' && !canContinue && <span className="muted">Pick at least one activity</span>}
             {step === 'lodging' && !canContinue && <span className="muted">Choose where you'd like to sleep</span>}
             <button type="submit" className="button button--primary button--large" disabled={!canContinue || create.isPending}>

@@ -7,6 +7,7 @@ import { PlanningOverlay } from '../components/PlanningOverlay';
 import { ErrorNote } from '../components/ui';
 import { draftFromRequest, toRequest, type TripDraft } from '../wizard/draft';
 import { StepActivities } from '../wizard/StepActivities';
+import { StepDestination } from '../wizard/StepDestination';
 import { StepLodging } from '../wizard/StepLodging';
 import { StepSchedule } from '../wizard/StepSchedule';
 
@@ -24,7 +25,8 @@ export function TripSettingsModal({ trip, onClose }: { trip: Trip; onClose: () =
   const [draft, setDraft] = useState<TripDraft>(() => draftFromRequest(trip.request, trip.name));
   const update = (patch: Partial<TripDraft>) => setDraft((d) => ({ ...d, ...patch }));
   const request = useMemo(() => toRequest({ ...draft, name: '' }), [draft]);
-  const hasEdits = trip.days.some((d) => d.stops.some((s) => s.source === 'user' || s.locked));
+  // Main events are always locked, but they come from these settings rather than from day edits.
+  const hasEdits = trip.days.some((d) => d.stops.some((s) => s.kind !== 'event' && (s.source === 'user' || s.locked)));
 
   // A <dialog> sits in the browser's top layer, above any page overlay, so step aside while planning.
   // The draft lives in this component, so if re-planning fails the dialog returns with the error and the user's changes.
@@ -72,11 +74,15 @@ export function TripSettingsModal({ trip, onClose }: { trip: Trip; onClose: () =
       {tab === 'route' && (
         <div className="form-stack">
           <PlaceAutocomplete label="Starting point" value={draft.origin} onChange={(origin) => update({ origin })} />
-          <PlaceAutocomplete
-            label="Destination"
-            value={draft.destination}
-            onChange={(destination) => update({ destination })}
-            bias={draft.origin?.location}
+          <StepDestination
+            origin={draft.origin}
+            destination={draft.destination}
+            onDestinationChange={(destination) => update({ destination })}
+            roundTrip={draft.roundTrip}
+            onRoundTripChange={(roundTrip) => update({ roundTrip })}
+            mainEvents={draft.mainEvents}
+            onMainEventsChange={(change) => setDraft((d) => ({ ...d, mainEvents: change(d.mainEvents) }))}
+            departureDate={draft.departureDate}
           />
         </div>
       )}

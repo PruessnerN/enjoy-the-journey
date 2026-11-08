@@ -1037,9 +1037,92 @@ textarea.input {
   margin: 0;
 }
 
-.review__activities {
+.review__activities,
+.review__route {
   margin: 0;
   padding-left: 1.1rem;
+}
+
+/* ---------- Destination & main events ---------- */
+
+.step-destination {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.round-trip-note {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+.main-events h3 {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.main-events > p {
+  margin: 0 0 0.75rem;
+}
+
+.main-events__list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.main-event {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.main-event__head {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.main-event__head > .selected-activity__rank {
+  margin-bottom: 0.55rem;
+}
+
+.main-event__head > :nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.main-event__actions {
+  display: inline-flex;
+  gap: 0.15rem;
+  margin-bottom: 0.25rem;
+}
+
+.main-event__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-top: 0.6rem;
+  padding-left: calc(24px + 0.6rem);
+}
+
+.main-event__stay {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.main-event__stay input {
+  width: 4.5rem;
+}
+
+.main-event .field__hint {
+  margin: 0.4rem 0 0;
+  padding-left: calc(24px + 0.6rem);
 }
 
 /* ---------- Feedback ---------- */
@@ -1683,6 +1766,7 @@ textarea.input {
 
 .map-pin--lodging,
 .map-pin--destination,
+.map-pin--event,
 .map-pin--start {
   width: 44px;
   height: 44px;
@@ -1971,8 +2055,39 @@ textarea.input {
 }
 
 .stop--lodging .stop__card,
-.stop--destination .stop__card {
+.stop--destination .stop__card,
+.stop--event .stop__card {
   background: var(--lodging-card-bg);
+}
+
+.stop--event .stop__card {
+  border-left: 3px solid var(--accent);
+}
+
+.stop__managed {
+  font-size: 0.82rem;
+  align-self: center;
+}
+
+.stay-free {
+  display: grid;
+  grid-template-columns: var(--time-col) var(--marker-col) minmax(0, 1fr);
+  column-gap: 0.7rem;
+  margin: 0.2rem 0;
+}
+
+.stay-free__card {
+  grid-column: 3;
+  padding: 1rem 1.1rem;
+  border-style: dashed;
+}
+
+.stay-free__card h3 {
+  margin: 0.15rem 0 0.3rem;
+}
+
+.stay-free__card p {
+  margin: 0;
 }
 
 .stop__head {

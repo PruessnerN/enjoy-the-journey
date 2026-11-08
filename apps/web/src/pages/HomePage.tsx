@@ -41,7 +41,8 @@ export function HomePage() {
               <Link to={`/trips/${t.id}`} className="trip-card__link">
                 <h3>{t.name}</h3>
                 <p>
-                  {t.originName} → {t.destinationName}
+                  {t.roundTrip ? `Round trip from ${t.originName}` : `${t.originName} → ${t.destinationName}`}
+                  {t.mainEventCount > 0 && ` · ${t.mainEventCount} main event${t.mainEventCount === 1 ? '' : 's'}`}
                 </p>
                 <p className="muted">
                   {t.departureDate && formatDate(t.departureDate)} · {t.days} day{t.days === 1 ? '' : 's'} ·{' '}

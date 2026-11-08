@@ -18,6 +18,8 @@ function toListItem(trip: Trip): TripListItem {
     updatedAt: trip.updatedAt,
     originName: trip.request.origin.name,
     destinationName: trip.request.destination.name,
+    mainEventCount: trip.request.mainEvents?.length ?? 0,
+    roundTrip: trip.request.roundTrip ?? false,
     departureDate: trip.request.departureDate,
     days: trip.summary.days,
     totalDriveSeconds: trip.summary.totalDriveSeconds,
@@ -112,6 +114,8 @@ export class PgTripRepository implements TripRepository {
       updated_at: Date;
       origin_name: string | null;
       destination_name: string | null;
+      main_event_count: number | null;
+      round_trip: boolean | null;
       departure_date: string | null;
       days: number | null;
       total_drive_seconds: number | null;
@@ -119,6 +123,8 @@ export class PgTripRepository implements TripRepository {
       SELECT id, name, created_at, updated_at,
              data #>> '{request,origin,name}' AS origin_name,
              data #>> '{request,destination,name}' AS destination_name,
+             jsonb_array_length(COALESCE(data #> '{request,mainEvents}', '[]'::jsonb)) AS main_event_count,
+             (data #>> '{request,roundTrip}')::boolean AS round_trip,
              data #>> '{request,departureDate}' AS departure_date,
              (data #>> '{summary,days}')::int AS days,
              (data #>> '{summary,totalDriveSeconds}')::int AS total_drive_seconds
@@ -132,6 +138,8 @@ export class PgTripRepository implements TripRepository {
       updatedAt: r.updated_at.toISOString(),
       originName: r.origin_name ?? '',
       destinationName: r.destination_name ?? '',
+      mainEventCount: r.main_event_count ?? 0,
+      roundTrip: r.round_trip ?? false,
       departureDate: r.departure_date ?? '',
       days: r.days ?? 0,
       totalDriveSeconds: r.total_drive_seconds ?? 0,

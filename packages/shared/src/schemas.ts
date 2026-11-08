@@ -105,18 +105,76 @@ export const tripPreferencesSchema = z
     path: ['arriveByTime'],
   });
 
-/** Activities are listed most important first; the planner fills each day in this order. */
-export const tripRequestSchema = z.object({
-  name: z.string().trim().max(120).optional(),
-  origin: placeInfoSchema,
-  destination: placeInfoSchema,
-  departureDate: isoDateSchema,
-  lodgingType: lodgingTypeSchema,
-  activities: z.array(activityRequestSchema).min(1, 'Pick at least one activity to enjoy along the way').max(20),
-  preferences: tripPreferencesSchema,
-});
+export const MAX_MAIN_EVENTS = 10;
+export const MAX_EVENT_HOURS = 12;
+export const MAX_EVENT_NIGHTS = 30;
 
-export const stopKindSchema = z.enum(['activity', 'meal', 'lodging', 'destination', 'custom']);
+export const stayUnitSchema = z.enum(['hours', 'nights']);
+
+/**
+ * A place the trip is built around, visited in list order before the destination. Staying for
+ * hours keeps the drive going the same day; staying for nights adds free days there.
+ */
+export const mainEventSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    place: placeInfoSchema,
+    stayUnit: stayUnitSchema,
+    stayAmount: z.number().int().min(1).max(MAX_EVENT_NIGHTS),
+    /** Day to be there. With hours, `arrivalTime` is when it starts; with nights, when to arrive by. */
+    arrivalDate: isoDateSchema.nullable().optional(),
+    arrivalTime: timeOfDaySchema.nullable().optional(),
+  })
+  .refine((e) => e.stayUnit === 'nights' || e.stayAmount <= MAX_EVENT_HOURS, {
+    message: `A stop of a few hours can last at most ${MAX_EVENT_HOURS} hours. Use nights for longer stays.`,
+    path: ['stayAmount'],
+  })
+  .refine((e) => !e.arrivalTime || e.arrivalDate, {
+    message: 'Pick a date to go with the arrival time',
+    path: ['arrivalDate'],
+  });
+
+/** Activities are listed most important first; the planner fills each day in this order. */
+export const tripRequestSchema = z
+  .object({
+    name: z.string().trim().max(120).optional(),
+    origin: placeInfoSchema,
+    destination: placeInfoSchema,
+    /** Optional places to visit on the way, in order. */
+    mainEvents: z.array(mainEventSchema).max(MAX_MAIN_EVENTS, `Add up to ${MAX_MAIN_EVENTS} main events`).optional(),
+    /** End where the trip started; `destination` is then the origin. */
+    roundTrip: z.boolean().optional(),
+    departureDate: isoDateSchema,
+    lodgingType: lodgingTypeSchema,
+    activities: z.array(activityRequestSchema).min(1, 'Pick at least one activity to enjoy along the way').max(20),
+    preferences: tripPreferencesSchema,
+  })
+  .superRefine((request, ctx) => {
+    const events = request.mainEvents ?? [];
+    if (request.roundTrip && events.length === 0) {
+      ctx.addIssue({ code: 'custom', message: 'Add at least one main event for a round trip', path: ['mainEvents'] });
+    }
+    if (new Set(events.map((e) => e.id)).size !== events.length) {
+      ctx.addIssue({ code: 'custom', message: 'Main events must be unique', path: ['mainEvents'] });
+    }
+    let previous = request.departureDate;
+    events.forEach((event, i) => {
+      if (!event.arrivalDate) return;
+      if (event.arrivalDate < previous) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            event.arrivalDate < request.departureDate
+              ? `${event.place.name} is dated before the trip starts`
+              : `${event.place.name} is dated before an earlier main event. Reorder them or change the dates.`,
+          path: ['mainEvents', i, 'arrivalDate'],
+        });
+      }
+      previous = event.arrivalDate;
+    });
+  });
+
+export const stopKindSchema = z.enum(['activity', 'meal', 'lodging', 'destination', 'custom', 'event']);
 
 export const linkSchema = z.object({
   label: z.string().min(1).max(60),
@@ -133,8 +191,12 @@ export const stopInputSchema = z.object({
   mealType: mealTypeSchema.optional(),
   /** Lodging stops: the kind of lodging (it can differ from the trip default after a swap). */
   lodgingType: lodgingTypeSchema.optional(),
+  /** Main event stops: the request's main event this stop is for. */
+  eventId: z.string().max(64).optional(),
   durationMinutes: z.number().int().min(0).max(1440),
   pinnedStart: timeOfDaySchema.nullable().optional(),
+  /** Arrive no later than this local time. */
+  arriveBy: timeOfDaySchema.nullable().optional(),
   locked: z.boolean().optional(),
   outdoor: z.boolean().optional(),
   notes: z.string().max(2000).optional(),
@@ -202,6 +264,8 @@ export type ActivityFrequency = z.infer<typeof activityFrequencySchema>;
 export type ActivityPriority = z.infer<typeof activityPrioritySchema>;
 export type ActivityRequest = z.infer<typeof activityRequestSchema>;
 export type TripPreferences = z.infer<typeof tripPreferencesSchema>;
+export type StayUnit = z.infer<typeof stayUnitSchema>;
+export type MainEvent = z.infer<typeof mainEventSchema>;
 export type TripRequest = z.infer<typeof tripRequestSchema>;
 export type StopKind = z.infer<typeof stopKindSchema>;
 export type Link = z.infer<typeof linkSchema>;

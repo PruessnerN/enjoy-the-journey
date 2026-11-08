@@ -1,4 +1,4 @@
-import { LODGING_TYPES, MEALS, MEAL_ORDER, PACES, formatMinutes, type ActivityFrequency } from '@journey/shared';
+import { LODGING_TYPES, MEALS, MEAL_ORDER, PACES, formatMinutes, stayLabel, type ActivityFrequency } from '@journey/shared';
 import { formatClock, formatDate } from '../lib/time';
 import type { TripDraft } from './draft';
 
@@ -12,7 +12,10 @@ const FREQUENCY_SUMMARY: Record<ActivityFrequency, string> = {
 export function StepReview({ draft, onNameChange }: { draft: TripDraft; onNameChange: (name: string) => void }) {
   const p = draft.preferences;
   const meals = MEAL_ORDER.filter((m) => p.meals[m]).map((m) => MEALS[m].label.toLowerCase());
-  const placeholder = draft.origin && draft.destination ? `${draft.origin.name.split(',')[0]} → ${draft.destination.name.split(',')[0]}` : '';
+  const end = draft.roundTrip ? draft.origin : draft.destination;
+  const placeholder = draft.origin && end
+    ? [draft.origin, ...draft.mainEvents.map((e) => e.place), end].map((p) => p?.name.split(',')[0]).join(' → ')
+    : '';
 
   return (
     <div className="review">
@@ -23,7 +26,19 @@ export function StepReview({ draft, onNameChange }: { draft: TripDraft; onNameCh
       <dl className="review__list">
         <dt>Route</dt>
         <dd>
-          {draft.origin?.name} → {draft.destination?.name}
+          <ol className="review__route">
+            <li>{draft.origin?.name}</li>
+            {draft.mainEvents.map((e) => (
+              <li key={e.id}>
+                <strong>{e.place?.name}</strong> · {stayLabel(e)}
+                {e.arrivalDate &&
+                  (e.stayUnit === 'hours'
+                    ? ` · on ${formatDate(e.arrivalDate, { weekday: 'short', month: 'short', day: 'numeric' })}${e.arrivalTime ? ` at ${formatClock(e.arrivalTime)}` : ''}`
+                    : ` · arrive ${formatDate(e.arrivalDate, { weekday: 'short', month: 'short', day: 'numeric' })}${e.arrivalTime ? ` by ${formatClock(e.arrivalTime)}` : ''}`)}
+              </li>
+            ))}
+            <li>{draft.roundTrip ? `Back to ${draft.origin?.name ?? 'the start'}` : end?.name}</li>
+          </ol>
         </dd>
         <dt>Leaving</dt>
         <dd>

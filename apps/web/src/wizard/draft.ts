@@ -1,19 +1,37 @@
 import {
   DEFAULT_PREFERENCES,
   addDaysToIsoDate,
+  mainEventSchema,
   tripRequestSchema,
   type ActivityRequest,
   type LodgingType,
+  type MainEvent,
   type PlaceInfo,
+  type StayUnit,
   type TripPreferences,
   type TripRequest,
 } from '@journey/shared';
+import { randomId } from '../lib/id';
 import { todayIso } from '../lib/time';
+
+/** A main event while it's being entered (the place may not be chosen yet). */
+export interface MainEventDraft {
+  id: string;
+  place: PlaceInfo | null;
+  stayUnit: StayUnit;
+  stayAmount: number;
+  arrivalDate: string | null;
+  arrivalTime: string | null;
+}
 
 export interface TripDraft {
   name: string;
   origin: PlaceInfo | null;
   destination: PlaceInfo | null;
+  /** Ordered places the trip is built around, visited before the destination. */
+  mainEvents: MainEventDraft[];
+  /** End back at the origin instead of at `destination`. */
+  roundTrip: boolean;
   activities: ActivityRequest[];
   lodgingType: LodgingType | null;
   departureDate: string;
@@ -42,6 +60,8 @@ export function emptyDraft(): TripDraft {
     name: '',
     origin: null,
     destination: null,
+    mainEvents: [],
+    roundTrip: false,
     activities: [],
     lodgingType: null,
     departureDate: nextSaturday(),
@@ -57,7 +77,16 @@ export function draftFromRequest(request: TripRequest, name = ''): TripDraft {
   return {
     name,
     origin: request.origin,
-    destination: request.destination,
+    destination: request.roundTrip ? null : request.destination,
+    mainEvents: (request.mainEvents ?? []).map((e) => ({
+      id: e.id,
+      place: e.place,
+      stayUnit: e.stayUnit,
+      stayAmount: e.stayAmount,
+      arrivalDate: e.arrivalDate ?? null,
+      arrivalTime: e.arrivalTime ?? null,
+    })),
+    roundTrip: request.roundTrip ?? false,
     activities: ranked,
     lodgingType: request.lodgingType,
     departureDate: request.departureDate,
@@ -70,7 +99,7 @@ export function isStepComplete(step: StepId, draft: TripDraft): boolean {
     case 'origin':
       return draft.origin !== null;
     case 'destination':
-      return draft.destination !== null;
+      return destinationProblem(draft) === null;
     case 'activities':
       return draft.activities.length > 0;
     case 'lodging':
@@ -82,10 +111,14 @@ export function isStepComplete(step: StepId, draft: TripDraft): boolean {
 }
 
 export function toRequest(draft: TripDraft): { ok: true; request: TripRequest } | { ok: false; message: string } {
+  const problem = draft.origin ? destinationProblem(draft) : 'Choose where the journey begins';
+  if (problem) return { ok: false, message: problem };
   const result = tripRequestSchema.safeParse({
     ...(draft.name.trim() ? { name: draft.name.trim() } : {}),
     origin: draft.origin,
-    destination: draft.destination,
+    destination: draft.roundTrip ? draft.origin : draft.destination,
+    ...(draft.mainEvents.length ? { mainEvents: draft.mainEvents.map(toMainEvent) } : {}),
+    ...(draft.roundTrip ? { roundTrip: true } : {}),
     activities: draft.activities,
     lodgingType: draft.lodgingType,
     departureDate: draft.departureDate,
@@ -94,6 +127,38 @@ export function toRequest(draft: TripDraft): { ok: true; request: TripRequest } 
   if (result.success) return { ok: true, request: result.data };
   const issue = result.error.issues[0];
   return { ok: false, message: issue?.message ?? 'Please complete every step.' };
+}
+
+export function newMainEvent(): MainEventDraft {
+  return { id: randomId(), place: null, stayUnit: 'nights', stayAmount: 1, arrivalDate: null, arrivalTime: null };
+}
+
+function toMainEvent(e: MainEventDraft): Partial<MainEvent> {
+  return {
+    id: e.id,
+    ...(e.place ? { place: e.place } : {}),
+    stayUnit: e.stayUnit,
+    stayAmount: e.stayAmount,
+    ...(e.arrivalDate ? { arrivalDate: e.arrivalDate } : {}),
+    ...(e.arrivalDate && e.arrivalTime ? { arrivalTime: e.arrivalTime } : {}),
+  };
+}
+
+/** Why the destination step isn't complete yet, or null when it is. */
+export function destinationProblem(draft: TripDraft): string | null {
+  if (!draft.roundTrip && !draft.destination) return 'Choose where you are headed';
+  if (draft.roundTrip && draft.mainEvents.length === 0) return 'Add at least one main event for a round trip';
+  let previous = '';
+  for (const [i, event] of draft.mainEvents.entries()) {
+    if (!event.place) return `Choose a place for main event ${i + 1}, or remove it`;
+    const result = mainEventSchema.safeParse(toMainEvent(event));
+    if (!result.success) return result.error.issues[0]?.message ?? `Check main event ${i + 1}`;
+    if (event.arrivalDate) {
+      if (event.arrivalDate < previous) return `${event.place.name.split(',')[0]} is dated before an earlier main event`;
+      previous = event.arrivalDate;
+    }
+  }
+  return null;
 }
 
 const STORAGE_KEY = 'ejt.draft.v1';

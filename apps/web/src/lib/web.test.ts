@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Stop, TripDay } from '@journey/shared';
-import { applyDayEdit } from './dayEdits';
+import { applyDayEdit, toStopInput } from './dayEdits';
 import { resolveTheme } from './theme';
 import { dayColor } from '../map/colors';
 import { dayStartIconKind, stopIcon, stopIconKind } from '../trip/stopIcons';
 import { swappedStop } from '../trip/swapStop';
-import { viewMoved } from '../map/mapModel';
+import { viewMoved, withMinimumSpan } from '../map/mapModel';
 import { ACTIVITY_CATALOG, activityRequestFromDefinition, searchCategoriesFor, type ActivityRequest } from '@journey/shared';
 import { clocksDiffer, formatClock, formatDate, formatTime } from './time';
 
@@ -93,10 +93,10 @@ describe('theme', () => {
 
 describe('stop icons', () => {
   it('uses only driving, lodging, activity and meal icons', () => {
-    const kinds = (['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIconKind({ kind }));
-    expect(kinds).toEqual(['activity', 'meal', 'activity', 'lodging', 'driving']);
+    const kinds = (['activity', 'meal', 'custom', 'lodging', 'destination', 'event'] as const).map((kind) => stopIconKind({ kind }));
+    expect(kinds).toEqual(['activity', 'meal', 'activity', 'lodging', 'driving', 'driving']);
     expect(stopIcon({ kind: 'meal' })).toBe('🍽️');
-    expect(new Set((['activity', 'meal', 'custom', 'lodging', 'destination'] as const).map((kind) => stopIcon({ kind }))).size).toBe(4);
+    expect(new Set((['activity', 'meal', 'custom', 'lodging', 'destination', 'event'] as const).map((kind) => stopIcon({ kind }))).size).toBe(4);
     expect([dayStartIconKind(0), dayStartIconKind(2)]).toEqual(['driving', 'lodging']);
   });
 });
@@ -139,5 +139,22 @@ describe('viewMoved', () => {
     expect(viewMoved({ south: 40.02, west: -111.98, north: 41.02, east: -109.98 }, base)).toBe(false);
     expect(viewMoved({ south: 40.5, west: -112, north: 41.5, east: -110 }, base)).toBe(true);
     expect(viewMoved({ south: 39.5, west: -113, north: 41.5, east: -109 }, base)).toBe(true);
+  });
+});
+
+describe('main event stops', () => {
+  it('keep their event, arrive-by time and lodging type through day edits', () => {
+    const input = toStopInput({ ...stop('e', 'event'), eventId: 'park', arriveBy: '15:00' });
+    expect(input).toMatchObject({ kind: 'event', eventId: 'park', arriveBy: '15:00' });
+    expect(toStopInput({ ...stop('h', 'lodging'), lodgingType: 'campground' }).lodgingType).toBe('campground');
+  });
+
+  it('show a free day in one place at a sensible zoom', () => {
+    const point = { north: 44.9, south: 44.9, east: -116.1, west: -116.1 };
+    const padded = withMinimumSpan(point);
+    expect(padded.north - padded.south).toBeCloseTo(0.08);
+    expect(padded.east - padded.west).toBeCloseTo(0.12);
+    const wide = { north: 46, south: 44, east: -114, west: -117 };
+    expect(withMinimumSpan(wide)).toEqual(wide);
   });
 });

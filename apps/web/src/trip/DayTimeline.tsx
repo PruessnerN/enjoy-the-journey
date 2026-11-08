@@ -26,6 +26,8 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
   const [modal, setModal] = useState<ModalState>(null);
   const busy = update.isPending || regenerate.isPending;
   const end = day.stops[day.stops.length - 1]!;
+  // A free day at a main event with nothing added yet: there's no drive to show.
+  const freeDay = day.stay !== undefined && day.stops.length === 1;
   const zoneNote = clocksDiffer(day.arrival, end.timeZone, day.timeZone) ? ` ${zoneAbbreviation(day.arrival, end.timeZone)}` : '';
 
   const commit = (stops: StopInput[], startTime?: string) => {
@@ -43,9 +45,18 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
           <span className="day__badge">Day {day.index + 1}</span>
           <h2>{formatDate(day.date, { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
           <p>
-            {day.start.name} → {end.place.name}
+            {day.stay ? (
+              <>
+                Free day at <strong>{day.stay.name}</strong> · staying at {end.place.name}
+              </>
+            ) : (
+              <>
+                {day.start.name} → {end.place.name}
+              </>
+            )}
           </p>
         </div>
+        {!freeDay && (
         <div className="day__stats">
           <span>
             <small>Driving</small> {formatDuration(day.driveSeconds)}
@@ -64,6 +75,7 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
             </span>
           )}
         </div>
+        )}
         <div className="day__controls">
           <label className="inline">
             <span>Leave at</span>
@@ -81,24 +93,28 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
               }}
             />
           </label>
-          <button
-            type="button"
-            className="button button--small"
-            disabled={busy}
-            onClick={() => regenerate.mutate({ index: day.index, freshIdeas: true })}
-            title="Replace unlocked stops with different ideas"
-          >
-            <Icon name="shuffle" /> Fresh ideas
-          </button>
-          <button
-            type="button"
-            className="button button--ghost button--small"
-            disabled={busy}
-            onClick={() => regenerate.mutate({ index: day.index, freshIdeas: false })}
-            title="Re-plan this day around your locked stops"
-          >
-            <Icon name="refresh" /> Re-plan day
-          </button>
+          {!day.stay && (
+            <>
+              <button
+                type="button"
+                className="button button--small"
+                disabled={busy}
+                onClick={() => regenerate.mutate({ index: day.index, freshIdeas: true })}
+                title="Replace unlocked stops with different ideas"
+              >
+                <Icon name="shuffle" /> Fresh ideas
+              </button>
+              <button
+                type="button"
+                className="button button--ghost button--small"
+                disabled={busy}
+                onClick={() => regenerate.mutate({ index: day.index, freshIdeas: false })}
+                title="Re-plan this day around your locked stops"
+              >
+                <Icon name="refresh" /> Re-plan day
+              </button>
+            </>
+          )}
         </div>
         <IssueList issues={day.issues} />
         {(update.isError || regenerate.isError) && <ErrorNote error={update.error ?? regenerate.error} />}
@@ -119,11 +135,23 @@ export function DayTimeline({ trip, day, focusedStopId, onFocusStop }: DayTimeli
               <span>{STOP_ICONS[dayStartIconKind(day.index)].emoji}</span>
             </div>
             <div className="stop__start">
-              <span className="stop__eyebrow">{day.index === 0 ? 'Start your journey' : 'Good morning! Check out'}</span>
+              <span className="stop__eyebrow">{day.index === 0 ? 'Start your journey' : day.stay ? 'Good morning' : 'Good morning! Check out'}</span>
               <h3>{day.start.name}</h3>
             </div>
           </li>
-          {day.stops.map((stop, i) => (
+          {freeDay && (
+            <>
+              <AddStopRow disabled={busy} onClick={() => setModal({ type: 'add', index: 0 })} />
+              <li className="stay-free">
+                <div className="stay-free__card card">
+                  <span className="stop__eyebrow">Free day</span>
+                  <h3>Enjoy {day.stay!.name}</h3>
+                  <p className="muted">Nothing is planned today. Add stops for things you'd like to do, or just take it easy.</p>
+                </div>
+              </li>
+            </>
+          )}
+          {!freeDay && day.stops.map((stop, i) => (
             <Fragment key={stop.id}>
               <AddStopRow disabled={busy} onClick={() => setModal({ type: 'add', index: i })} />
               <DriveSegment day={day} index={i} />

@@ -107,6 +107,15 @@ export function scheduleDay(items: SeqItem[], legs: LegEstimate[], ctx: DayConte
       }
     }
 
+    if (item.arriveBy) {
+      const latest = localTimeToEpoch(ctx.date, parseTimeOfDay(item.arriveBy), tz);
+      if (arrival > latest + S.lateArrivalToleranceMinutes * MINUTE - safety) {
+        add('late_arrival', `Arrives around ${fmt(arrival)}, after your ${fmt(latest)} target.`);
+        // Like a late night arrival: nothing more should be squeezed in before it.
+        endBlocked = true;
+      }
+    }
+
     if (item.kind === 'meal' && item.mealType) {
       const meal = MEALS[item.mealType];
       const windowStart = localTimeToEpoch(ctx.date, parseTimeOfDay(meal.windowStart), tz);

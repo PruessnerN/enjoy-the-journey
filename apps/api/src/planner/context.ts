@@ -47,6 +47,12 @@ export function buildDayContext(
 export function computeDayCount(totalDriveSeconds: number, request: TripRequest, origin: PlaceInfo): number {
   const prefs = request.preferences;
   if (prefs.fixedDays) return prefs.fixedDays;
+  return naturalDayCount(totalDriveSeconds, request, origin);
+}
+
+/** Days the drive needs at the travellers' pace, ignoring any fixed trip length. */
+export function naturalDayCount(totalDriveSeconds: number, request: TripRequest, origin: PlaceInfo): number {
+  const prefs = request.preferences;
 
   const startMin = parseTimeOfDay(prefs.dayStartTime);
   let endMin = parseTimeOfDay(prefs.arriveByTime);

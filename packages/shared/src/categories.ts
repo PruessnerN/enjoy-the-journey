@@ -67,6 +67,7 @@ export function swapGroupFor(kind: StopKind): SwapGroup | null {
   if (kind === 'meal') return 'meal';
   if (kind === 'lodging') return 'lodging';
   if (kind === 'activity' || kind === 'custom') return 'activity';
+  // The destination and main events are changed in trip settings.
   return null;
 }
 

@@ -15,6 +15,10 @@ export interface SeqItem {
   lodgingType?: LodgingType;
   outdoor?: boolean;
   pinnedStart?: string | null;
+  /** Arrive no later than this local time (HH:mm). */
+  arriveBy?: string | null;
+  /** Main event stops: which main event of the request. */
+  eventId?: string;
   locked?: boolean;
   source: 'planner' | 'user';
   activityId?: string;

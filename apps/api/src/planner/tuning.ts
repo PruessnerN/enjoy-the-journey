@@ -69,6 +69,13 @@ export const TUNING = {
     minDetourAllowanceMinutes: 30,
     /** If nothing meets the minimum rating we relax it by this much (a bed beats no bed). */
     ratingRelaxation: 0.5,
+    /** Lodging for nights at a main event is searched within this distance of it… */
+    stayRadiusKm: 30,
+    stayDistancePenaltyPerKm: 0.08,
+    /** …then the best few are routed, and only those this short a drive away are kept. */
+    stayCandidatesToRoute: 5,
+    stayMaxDriveMinutes: 60,
+    stayDrivePenaltyPerHour: 4,
   },
 
   schedule: {
@@ -96,7 +103,9 @@ export const TUNING = {
     driveOverheadFactor: 1.08,
     /** Minimum time reserved for fun each day, by pace. */
     minFunMinutes: { relaxed: 240, balanced: 150, efficient: 60 } satisfies Record<Pace, number>,
+    /** Most driving days in a trip, and most days overall (stays at main events included). */
     maxDays: 21,
+    maxTripDays: 60,
   },
 
   candidates: {

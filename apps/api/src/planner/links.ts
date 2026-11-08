@@ -15,9 +15,9 @@ export function townFromAddress(address: string | undefined): string | null {
   return /^\d/.test(cityPart) ? region : `${cityPart}, ${region}`;
 }
 
-export function lodgingLinks(type: LodgingType, place: PlaceInfo, town: string | null, checkIn: string, travelers: number): Link[] {
+export function lodgingLinks(type: LodgingType, place: PlaceInfo, town: string | null, checkIn: string, travelers: number, nights = 1): Link[] {
   const links: Link[] = [];
-  const checkOut = addDaysToIsoDate(checkIn, 1);
+  const checkOut = addDaysToIsoDate(checkIn, Math.max(1, nights));
   if (place.websiteUri) links.push({ label: 'Website', url: place.websiteUri });
   if (place.googleMapsUri) links.push({ label: 'Google Maps', url: place.googleMapsUri });
   if (type === 'vacation_rental' && town) {

@@ -1,6 +1,6 @@
 import { formatDistance, formatDuration, formatMinutes, type Stop, type Trip, type TripDay } from '@journey/shared';
 import { STOP_ICONS, stopIconKind } from './stopIcons';
-import { clocksDiffer, formatTime, zoneAbbreviation } from '../lib/time';
+import { clocksDiffer, formatClock, formatTime, zoneAbbreviation } from '../lib/time';
 import { Icon } from '../components/Icon';
 import { IssueList, Rating } from '../components/ui';
 
@@ -10,6 +10,7 @@ export const KIND_LABEL: Record<Stop['kind'], string> = {
   lodging: 'Overnight',
   destination: 'Destination',
   custom: 'Your stop',
+  event: 'Main event',
 };
 
 interface StopCardProps {
@@ -33,6 +34,8 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
   const lastMovable = day.stops.length - 2;
   const showZone = clocksDiffer(stop.arrival, stop.timeZone, day.timeZone);
   const label = stop.activityLabel ?? KIND_LABEL[stop.kind];
+  const isEvent = stop.kind === 'event';
+  const lodgingLabel = day.stay ? `Back at your stay · ${label}` : `Check in · ${label}`;
   const iconKind = stopIconKind(stop);
 
   return (
@@ -50,10 +53,11 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
         <header className="stop__head">
           <div className="stop__title">
             <span className="stop__eyebrow">
-              {stop.kind === 'lodging' ? `Check in · ${label}` : label}
-              {!isEnd && ` · ${formatMinutes(stop.durationMinutes)}`}
+              {stop.kind === 'lodging' ? lodgingLabel : label}
+              {!isEnd && !isEvent && ` · ${formatMinutes(stop.durationMinutes)}`}
               {stop.pinnedStart && ' · Fixed time'}
-              {stop.locked && (
+              {stop.arriveBy && ` · Arrive by ${formatClock(stop.arriveBy)}`}
+              {stop.locked && !isEvent && (
                 <span className="lock-badge" title="Locked: kept when you regenerate this day">
                   <Icon name="lock" size={12} /> Locked
                 </span>
@@ -74,7 +78,8 @@ export function StopCard({ trip, day, stop, index, number, disabled, focused, on
               {stop.place.address && stop.place.address !== stop.place.name && <span className="stop__address">{stop.place.address}</span>}
             </div>
           </div>
-          {stop.kind !== 'destination' && (
+          {isEvent && <span className="muted stop__managed">Change in Trip settings</span>}
+          {stop.kind !== 'destination' && !isEvent && (
             <div className="stop__actions" onClick={(e) => e.stopPropagation()}>
               <button type="button" className="button button--small" onClick={onSwap} disabled={disabled} title="See alternatives nearby">
                 <Icon name="swap" /> Swap

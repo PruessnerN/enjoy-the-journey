@@ -87,8 +87,24 @@ All settings are environment variables (see [.env.example](.env.example)):
 
 ## Using it
 
-**Plan:** origin → destination → activities (at least one) → lodging type (required) → schedule &
-pace → review. Activities form a **ranked list** (drag or ↑ ↓ to reorder, most important first).
+**Plan:** origin → destination (plus optional main events) → activities (at least one) → lodging
+type (required) → schedule & pace → review.
+
+**Main events** are up to 10 places the trip is built around (a concert, a national park, family),
+visited in the order you list them (↑ ↓ to reorder) before the destination. Each has a stay length:
+
+- **Hours** (up to 12): a fixed stop on a driving day; the drive continues afterwards. An optional
+  date and *starts at* time pin it to that day and time.
+- **Nights** (up to 30): that day's drive ends there, one place to stay nearby is found for every
+  night (booking links cover the whole stay), and the extra days are left free for you to fill with
+  your own stops. An optional date and *arrive by* time set when you get there.
+
+The schedule counts drives, stays and dates together. If there's more time than needed before a
+dated main event, the drive is spread out; if there's too little, the trip warns you (or explains
+why it can't be done). Pick **Round trip** to end back at your starting point; a round trip needs
+at least one main event. Main events are changed in **Trip settings → Route**, not in day edits.
+
+Activities form a **ranked list** (drag or ↑ ↓ to reorder, most important first). Activities form a **ranked list** (drag or ↑ ↓ to reorder, most important first).
 When a day can't fit everything, the planner goes down the list in order and picks the best-rated
 spot it can fit for each. Built-in and custom activities default to *once per trip*; saved trips keep
 their selected frequencies. Each activity can be *once per trip*, *2–3 times per trip* (about every other
@@ -118,7 +134,9 @@ there". You can also cap **activities per day** (meals don't count). You can als
 - **Change the departure time** for any day.
 - **Fresh ideas** replaces a day's unlocked stops with different suggestions. **Re-plan day**
   rebuilds the day around your locked stops.
-- **Trip settings** changes any input (route, activities, lodging, pace) and re-plans the whole trip.
+- **Free days** at a main event start empty. Add stops to plan them; *Fresh ideas* and *Re-plan day*
+  are only for driving days. Swapping a stay's lodging moves every night of that stay.
+- **Trip settings** changes any input (route, main events, activities, lodging, pace) and re-plans the whole trip.
 - Warnings explain problems in plain language ("Likely closed at 6:10 PM", "You'd be driving after
   dark — sunset is 5:03 PM"), so you can fix them yourself.
 - **Add to calendar** (`.ics`) and **Print** for a paper itinerary.
@@ -131,13 +149,18 @@ The planner lives in [apps/api/src/planner](apps/api/src/planner). Every knob is
 [tuning.ts](apps/api/src/planner/tuning.ts), so the algorithm can be adjusted without touching the
 logic.
 
-1. **Route & day count:** route origin → destination. Each day gets a driving budget: the smaller
-   of your max driving hours and the travel window (start time → arrive-by, or sunset if you avoid
-   night driving) minus meals and a minimum amount of fun for your pace. Days = drive ÷ budget.
+1. **Route & day count:** the trip is split into drives at main events you stay at overnight, and
+   each drive is routed through any few-hours main events on it. Each day gets a driving budget:
+   the smaller of your max driving hours and the travel window (start time → arrive-by, or sunset
+   if you avoid night driving) minus meals and a minimum amount of fun for your pace. Days = (drive
+   + time at main events) ÷ budget, unless a main event's date fixes when a drive must arrive. A
+   fixed trip length is met by lengthening or shortening the drives after the last dated event.
 2. **Nights first, so you make progress:** lodging is chosen near each even split of the drive. It
    picks the best-rated lodging of your type inside a window around that point and penalizes
    deviating from it and detours. For Airbnb/VRBO (which aren't on Google Maps) it finds a good town
-   for the night and links Airbnb and VRBO searches for the right dates.
+   for the night and links Airbnb and VRBO searches for the right dates. Nights are split around
+   dated few-hours events so each lands on its day. For overnight main events, the best-rated
+   lodging within 30 km is chosen once for the whole stay.
 3. **Candidates along each day:** it routes between that day's start and end, then searches *along
    the route* for each activity. It searches for restaurants only where you could plausibly be at
    mealtime. Each place gets a position along the drive and an estimated detour.

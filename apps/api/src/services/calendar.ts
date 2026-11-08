@@ -32,10 +32,17 @@ function fold(line: string): string {
 function eventFor(trip: Trip, stop: Stop, dayNumber: number): string[] | null {
   const isEnd = stop.kind === 'lodging' || stop.kind === 'destination';
   const start = isEnd ? stop.arrival : stop.start;
-  const end = isEnd ? new Date(new Date(stop.arrival).getTime() + 30 * 60_000).toISOString() : stop.departure;
+  // Arrivals (and arriving at a main event for the night) get a short calendar slot.
+  const end = isEnd || stop.departure === stop.start ? new Date(new Date(start).getTime() + 30 * 60_000).toISOString() : stop.departure;
   const label =
-    stop.kind === 'lodging' ? `Check in: ${stop.place.name}` : stop.kind === 'destination' ? `Arrive: ${stop.place.name}` : stop.place.name;
-  const prefix = stop.activityLabel && !isEnd ? `${stop.activityLabel} · ` : '';
+    stop.kind === 'lodging'
+      ? `Check in: ${stop.place.name}`
+      : stop.kind === 'destination'
+        ? `Arrive: ${stop.place.name}`
+        : stop.kind === 'event'
+          ? `Main event: ${stop.place.name}`
+          : stop.place.name;
+  const prefix = stop.activityLabel && !isEnd && stop.kind !== 'event' ? `${stop.activityLabel} · ` : '';
   const description = [
     `Day ${dayNumber} of ${trip.name}`,
     stop.place.rating ? `Rated ${stop.place.rating} (${stop.place.userRatingCount ?? 0} reviews)` : '',
@@ -69,7 +76,12 @@ export function buildCalendar(trip: Trip): string {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeText(trip.name)}`,
-    ...trip.days.flatMap((day) => day.stops.flatMap((stop) => eventFor(trip, stop, day.index + 1) ?? [])),
+    ...trip.days.flatMap((day) =>
+      day.stops
+        // On free days at a main event, the lodging is the one already checked into.
+        .filter((stop) => !(day.stay && stop.kind === 'lodging'))
+        .flatMap((stop) => eventFor(trip, stop, day.index + 1) ?? []),
+    ),
     'END:VCALENDAR',
   ];
   return `${lines.map(fold).join('\r\n')}\r\n`;

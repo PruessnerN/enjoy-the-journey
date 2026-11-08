@@ -4,6 +4,7 @@ import { simplifyToMaxPoints } from '../geo/geo.js';
 import { RouteProfile } from '../geo/routeProfile.js';
 import { sunTimes, toIso } from '../geo/time.js';
 import type { DataProvider, RouteResult, Waypoint } from '../providers/types.js';
+import { placeKey } from './candidates.js';
 import { scheduleDay, type DayContext } from './schedule.js';
 import { straightLineLegs, type SeqItem } from './sequence.js';
 
@@ -40,6 +41,11 @@ function simplifyEncoded(polyline: string, maxPoints = 300): string {
   return encodePolyline(simplifyToMaxPoints(decodePolyline(polyline), maxPoints));
 }
 
+/** True when the day is just staying where the travellers already are. */
+function isStayInPlace(start: PlaceInfo, items: readonly SeqItem[]): boolean {
+  return items.length === 1 && placeKey(items[0]!.place) === placeKey(start);
+}
+
 export interface FinalizeDayArgs {
   provider: DataProvider;
   index: number;
@@ -62,16 +68,21 @@ export async function finalizeDay(args: FinalizeDayArgs): Promise<TripDay> {
     if (items.length - 1 > MAX_INTERMEDIATES) {
       throw new Error(`More than ${MAX_INTERMEDIATES} stops in one day`);
     }
-    const waypoints = items.map((i) => toWaypoint(i.place));
-    const route = await provider.routes.computeRoute(toWaypoint(start), waypoints[waypoints.length - 1]!, waypoints.slice(0, -1));
-    if (route.legs.length !== items.length) throw new Error('Routing returned an unexpected number of legs');
-    legs = route.legs.map((leg) => ({
-      durationSeconds: leg.durationSeconds,
-      distanceMeters: leg.distanceMeters,
-      breakMinutes: 0,
-      polyline: simplifyEncoded(leg.polyline),
-      estimated: false,
-    }));
+    if (isStayInPlace(start, items)) {
+      // A free day at a main event: nothing to route.
+      legs = [{ durationSeconds: 0, distanceMeters: 0, breakMinutes: 0, estimated: false }];
+    } else {
+      const waypoints = items.map((i) => toWaypoint(i.place));
+      const route = await provider.routes.computeRoute(toWaypoint(start), waypoints[waypoints.length - 1]!, waypoints.slice(0, -1));
+      if (route.legs.length !== items.length) throw new Error('Routing returned an unexpected number of legs');
+      legs = route.legs.map((leg) => ({
+        durationSeconds: leg.durationSeconds,
+        distanceMeters: leg.distanceMeters,
+        breakMinutes: 0,
+        polyline: simplifyEncoded(leg.polyline),
+        estimated: false,
+      }));
+    }
   } catch (error) {
     legs = straightLineLegs(start, items).map((l) => ({ ...l, breakMinutes: 0, estimated: true }));
     dayIssues.push({
@@ -107,7 +118,9 @@ export async function finalizeDay(args: FinalizeDayArgs): Promise<TripDay> {
     if (item.emoji) stop.emoji = item.emoji;
     if (item.mealType) stop.mealType = item.mealType;
     if (item.lodgingType) stop.lodgingType = item.lodgingType;
+    if (item.eventId) stop.eventId = item.eventId;
     if (item.pinnedStart) stop.pinnedStart = item.pinnedStart;
+    if (item.arriveBy) stop.arriveBy = item.arriveBy;
     if (item.outdoor !== undefined) stop.outdoor = item.outdoor;
     if (item.notes) stop.notes = item.notes;
     if (item.links?.length) stop.links = item.links;

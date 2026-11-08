@@ -12,7 +12,10 @@ export function toStopInput(stop: Stop | StopInput): StopInput {
   if (stop.activityLabel) input.activityLabel = stop.activityLabel;
   if (stop.emoji) input.emoji = stop.emoji;
   if (stop.mealType) input.mealType = stop.mealType;
+  if (stop.lodgingType) input.lodgingType = stop.lodgingType;
+  if (stop.eventId) input.eventId = stop.eventId;
   if (stop.pinnedStart) input.pinnedStart = stop.pinnedStart;
+  if (stop.arriveBy) input.arriveBy = stop.arriveBy;
   if (stop.locked !== undefined) input.locked = stop.locked;
   if (stop.outdoor !== undefined) input.outdoor = stop.outdoor;
   if (stop.notes) input.notes = stop.notes;

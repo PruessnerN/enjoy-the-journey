@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formatDuration, type Trip } from '@journey/shared';
+import { formatDuration, routeLabel, type Trip } from '@journey/shared';
 import { api } from '../api/client';
 import { useDeleteTrip, useRenameTrip } from '../api/hooks';
 import { formatDate } from '../lib/time';
@@ -50,7 +50,7 @@ export function TripHeader({ trip, onOpenSettings }: { trip: Trip; onOpenSetting
           </h1>
         )}
         <p className="trip-header__route">
-          {trip.request.origin.name} → {trip.request.destination.name}
+          {routeLabel(trip.request, 6)}
         </p>
         <p className="muted">
           {formatDate(trip.request.departureDate)}

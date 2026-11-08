@@ -12,7 +12,7 @@ export interface MapMarker {
   label: string;
   emoji: string;
   title: string;
-  kind: 'start' | 'stop' | 'lodging' | 'destination';
+  kind: 'start' | 'stop' | 'lodging' | 'destination' | 'event';
   color: string;
 }
 
@@ -71,9 +71,11 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
   }
 
   for (const day of visibleDays) {
+    // Free days at a main event repeat the same lodging; the whole-trip map shows it once.
+    if (selectedDay === null && day.stay) continue;
     day.stops.forEach((stop, i) => {
       const isEnd = stop.kind === 'lodging' || stop.kind === 'destination';
-      if (selectedDay === null && !isEnd) return;
+      if (selectedDay === null && !isEnd && stop.kind !== 'event') return;
       markers.push({
         key: stop.id,
         dayIndex: day.index,
@@ -82,7 +84,7 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
         label: selectedDay === null ? '' : String(i + 1),
         emoji: stopIcon(stop),
         title: `${formatTime(isEnd ? stop.arrival : stop.start, stop.timeZone)} · ${stop.place.name}`,
-        kind: stop.kind === 'lodging' ? 'lodging' : stop.kind === 'destination' ? 'destination' : 'stop',
+        kind: stop.kind === 'lodging' ? 'lodging' : stop.kind === 'destination' ? 'destination' : stop.kind === 'event' ? 'event' : 'stop',
         color: dayColor(day.index, theme),
       });
     });
@@ -98,13 +100,20 @@ export function buildMapModel(trip: Trip, selectedDay: number | null, theme: The
   return {
     markers,
     paths,
-    bounds: {
+    bounds: withMinimumSpan({
       north: Math.max(...lats),
       south: Math.min(...lats),
       east: Math.max(...lngs),
       west: Math.min(...lngs),
-    },
+    }),
   };
+}
+
+/** Keeps a day spent in one place (a free day at a main event) from zooming in to street level. */
+export function withMinimumSpan(bounds: Bounds, minLat = 0.08, minLng = 0.12): Bounds {
+  const padLat = Math.max(0, (minLat - (bounds.north - bounds.south)) / 2);
+  const padLng = Math.max(0, (minLng - (bounds.east - bounds.west)) / 2);
+  return { north: bounds.north + padLat, south: bounds.south - padLat, east: bounds.east + padLng, west: bounds.west - padLng };
 }
 
 /** The day's drive as one path per leg (straight lines where a leg has no geometry). */
