@@ -106,7 +106,10 @@ there". You can also cap **activities per day** (meals don't count). You can als
   ("Thai", "9-hole"). Activities can switch to any activity (disc golf → kayaking), meals to any
   kind of food (Pizza, BBQ, Quick bite…), lodging to any lodging type (campground → hotel), but a
   meal can't become an activity and an activity can't become lodging. Pan or zoom the map and hit
-  **Search this area** to look elsewhere; **Show more results** pages through up to 60.
+  **Search this area** to look elsewhere. Both search buttons use the visible map area and the
+  current keyword; category changes also search the visible area. Zoom in if the area is too
+  large to search. **Show more results** pages through up to 60. The parks category includes both
+  state and national parks, including searches from previously saved trips.
 - **Add a stop** anywhere: pick from your activities and meals, search freely ("pie", "hot springs"),
   or look up an exact place you found on Google ("I know where I want to go").
 - **Edit** a stop's duration, set a *start no earlier than* time (reservations, tee times), add notes.

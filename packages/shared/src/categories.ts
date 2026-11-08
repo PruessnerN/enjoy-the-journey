@@ -71,13 +71,14 @@ export function swapGroupFor(kind: StopKind): SwapGroup | null {
 }
 
 function activityCategory(a: Pick<ActivityRequest, 'id' | 'label' | 'emoji' | 'query' | 'includedType' | 'durationMinutes' | 'outdoor'>, section: string): SearchCategory {
+  const search = findActivityDefinition(a.id) ?? a;
   return {
     id: a.id,
     group: 'activity',
     label: a.label,
     emoji: a.emoji ?? '📍',
-    query: a.query,
-    ...(a.includedType ? { includedType: a.includedType } : {}),
+    query: search.query,
+    ...(search.includedType ? { includedType: search.includedType } : {}),
     section,
     durationMinutes: a.durationMinutes,
     outdoor: a.outdoor,

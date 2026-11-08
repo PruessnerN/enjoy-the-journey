@@ -35,7 +35,7 @@ export function GoogleAreaMap({ apiKey, mapId, theme, initialArea, routePaths, m
         streetViewControl={false}
         mapTypeControl={false}
         fullscreenControl={false}
-        onIdle={(e) => {
+        onBoundsChanged={(e) => {
           const bounds = e.map.getBounds();
           if (bounds) onViewChange(bounds.toJSON());
         }}

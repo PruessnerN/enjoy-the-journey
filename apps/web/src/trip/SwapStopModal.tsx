@@ -100,11 +100,13 @@ export function SwapStopModal({ trip, day, stop, onChoose, onClose }: SwapStopMo
   }, [search.data]);
 
   const moved = view !== null && baseline !== null && viewMoved(view, baseline);
+  const areaTooBig = view !== null && tooBig(view);
 
-  /** Once the user has moved the map, new searches cover what's on screen. */
+  /** Explicit searches always use the current view, even after a small pan or zoom. */
   const startSearch = (change: () => void) => {
+    if (areaTooBig) return;
     change();
-    if (moved && view && !tooBig(view)) {
+    if (view) {
       setArea(view);
       setBaseline(view);
     }
@@ -112,10 +114,7 @@ export function SwapStopModal({ trip, day, stop, onChoose, onClose }: SwapStopMo
   };
 
   const searchHere = () => {
-    if (!view || tooBig(view)) return;
-    setArea(view);
-    setBaseline(view);
-    setActiveKey(null);
+    startSearch(() => setSubmittedKeyword(keyword.trim()));
   };
 
   const onViewChange = useCallback((next: Bounds) => {
@@ -173,6 +172,7 @@ export function SwapStopModal({ trip, day, stop, onChoose, onClose }: SwapStopMo
               <select
                 className="input"
                 value={categoryId}
+                disabled={areaTooBig}
                 onChange={(e) => {
                   const next = e.target.value;
                   startSearch(() => setCategoryId(next));
@@ -204,11 +204,12 @@ export function SwapStopModal({ trip, day, stop, onChoose, onClose }: SwapStopMo
                 aria-label="Narrow it down"
                 maxLength={80}
               />
-              <button type="submit" className="button">
+              <button type="submit" className="button" disabled={areaTooBig}>
                 Search
               </button>
             </form>
           </div>
+          {areaTooBig && <p className="muted" role="status">Zoom in to search this map area.</p>}
           <p className="swap__status muted" aria-live="polite">
             {status}
           </p>

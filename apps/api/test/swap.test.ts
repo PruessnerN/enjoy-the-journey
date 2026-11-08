@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import {
   defaultSearchCategory,
@@ -8,6 +8,7 @@ import {
   type SwapSearchResult,
   type Trip,
 } from '@journey/shared';
+import type { DataProvider } from '../src/providers/types.js';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import { MemoryTripRepository } from '../src/db/tripRepository.js';
@@ -15,9 +16,10 @@ import { activities, demoProvider, makeRequest } from './helpers.js';
 
 let app: FastifyInstance;
 let trip: Trip;
+let provider: DataProvider;
 
 beforeAll(async () => {
-  const provider = demoProvider();
+  provider = demoProvider();
   app = await buildApp({ config: loadConfig({ DATA_SOURCE: 'demo', LOG_LEVEL: 'silent' }), repo: new MemoryTripRepository(), provider });
   const request = await makeRequest(provider, 'Boise', 'Salt Lake City', {
     lodgingType: 'campground',
@@ -62,9 +64,40 @@ describe('swap categories', () => {
     expect(defaultSearchCategory({ kind: 'custom' }, acts, 'campground')).toBe('top_attractions');
     expect(defaultSearchCategory({ kind: 'destination' }, acts, 'campground')).toBeNull();
   });
+
+  it('uses current park search definitions for saved trips, preserving custom searches', () => {
+    const [parks] = activities('parks');
+    const savedParks = { ...parks!, query: 'state park', includedType: 'state_park' };
+    const custom = { ...parks!, id: 'custom-birding', query: 'birdwatching reserve', includedType: 'park' };
+    const options = searchCategoriesFor('activity', [savedParks, custom]);
+    expect(options.find((c) => c.id === 'parks')).toMatchObject({ query: 'state park or national park' });
+    expect(options.find((c) => c.id === 'parks')?.includedType).toBeUndefined();
+    expect(options.find((c) => c.id === custom.id)).toMatchObject({ query: custom.query, includedType: custom.includedType });
+  });
 });
 
 describe('swap search API', () => {
+  it('searches Yellowstone in the requested viewport without restricting it to state parks', async () => {
+    const area = { south: 44, west: -111.2, north: 45.2, east: -109.8 };
+    const places = vi.spyOn(provider.places, 'searchPage').mockResolvedValueOnce({
+      places: [{ placeId: 'yellowstone', name: 'Yellowstone National Park', location: { lat: 44.6, lng: -110.5 }, rating: 4.8 }],
+    });
+    try {
+      const res = await search(stopOf('activity'), { category: 'parks', q: 'Yellowstone', ...area });
+      expect(res.statusCode).toBe(200);
+      expect(places).toHaveBeenCalledWith(
+        { query: 'Yellowstone state park or national park', within: area, maxResults: 20 },
+        undefined,
+      );
+      expect(res.json<SwapSearchResult>()).toMatchObject({
+        area,
+        results: [{ place: { name: 'Yellowstone National Park' } }],
+      });
+    } finally {
+      places.mockRestore();
+    }
+  });
+
   it("searches the stop's own category in the area around it by default", async () => {
     const stop = trip.days.flatMap((d) => d.stops).find((s) => s.activityId === 'disc_golf')!;
     const day = trip.days.findIndex((d) => d.stops.includes(stop));

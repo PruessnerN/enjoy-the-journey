@@ -26,7 +26,7 @@ export interface AreaMapProps {
   /** Pan to this marker if it is off screen (set when a result is clicked in the list). */
   panToId?: string | null;
   onSelect: (id: string) => void;
-  /** Called with the visible area after the map settles (initially and after every pan/zoom). */
+  /** Called with the visible area initially and as the map pans or zooms. */
   onViewChange: (view: Bounds) => void;
 }
 

@@ -70,11 +70,9 @@ export function ZoomableSchematicMap({ initialArea, routePaths, markers, activeI
     if (size && size.w > 0 && size.h > 0 && !view) setView(fit(initialArea, size));
   }, [size, view, initialArea]);
 
-  // Report the visible area once the user stops moving the map.
   useEffect(() => {
     if (!view || !size) return;
-    const timer = setTimeout(() => onViewChangeRef.current(visibleBounds(view, size)), 250);
-    return () => clearTimeout(timer);
+    onViewChangeRef.current(visibleBounds(view, size));
   }, [view, size]);
 
   // React's wheel listener is passive, so register our own to stop the dialog from scrolling.
